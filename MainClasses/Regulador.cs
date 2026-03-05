@@ -1,4 +1,5 @@
-﻿using System;
+﻿using OfficeOpenXml.FormulaParsing.Excel.Functions;
+using System;
 using System.Data.SqlClient;
 using System.Text;
 
@@ -65,16 +66,20 @@ namespace ExportadorGeoPerdasDSS
                         while (rs.Read())
                         {
                             // OBS: necessario converter a TnsLnh1_kV p/ fase-neutro, visto as mesmas ja virem adequadas p/ o caso do BRT em estrela  
-                            string tensaoFN = AuxFunc.GetTensaoFN(rs["TnsLnh1_kV"].ToString());
-                            string ptratio = GetPTRatio(tensaoFN);
+                            string tensaoFF = rs["TnsLnh1_kV"].ToString();
+                            string tensaoFN = AuxFunc.GetTensaoFN(tensaoFF);
+
                             string tipoRegul = rs["TipRegul"].ToString();
                             string perVazioPer = CalcPerdVazio(rs);
                             string vRegVolts = CalcVReg(rs["TenRgl_pu"].ToString());
                             string numEq = " ! " + rs["Descr"].ToString();
+                            string fases = AuxFunc.GetFasesDSS(rs["CodFasPrim"].ToString());
 
                             // banco de regulador
                             if (tipoRegul.Equals("4"))
                             {
+                                string ptratio = GetPTRatio(tensaoFN);
+
                                 string linha1 = "new transformer.RT" + rs["CodRegulMT"] + "-" + rs["CodBnc"].ToString()
                                     + " Phases=1"
                                     + ",windings=2"
@@ -104,6 +109,41 @@ namespace ExportadorGeoPerdasDSS
                                 _arqReguladorMT.Append(linha2);
 
                             }
+                            // delta aberto
+                            if (tipoRegul.Equals("2"))
+                            {
+                                string ptratio = GetPTRatio(tensaoFF);
+
+                                string linha1 = "new transformer.RT" + rs["CodRegulMT"] + "-" + rs["CodBnc"].ToString()
+                                    + " Phases=1"
+                                    + ",windings=2"
+                                    + ",buses=[" + "BMT" + rs["CodPonAcopl1"] + fases + " " + "BMT" + rs["CodPonAcopl2"] + fases + "],"
+                                    + "conns=[delta delta]"
+                                    + ",kvs=[" + tensaoFF + " " + tensaoFF + "]"
+                                    + ",kvas=[" + rs["PotNom_kVA"].ToString() + " " + rs["PotNom_kVA"].ToString() + "]"
+                                    + ",xhl=" + rs["ReatHL_%"]
+                                    + ",%loadloss=" + rs["Resis_%"]
+                                    + ",%noloadloss=" + perVazioPer + Environment.NewLine;
+
+                                string linha2 = "new RegControl.RC" + rs["CodRegulMT"] + "-" + rs["CodBnc"].ToString()
+                                    + " transformer=RT" + rs["CodRegulMT"] + "-" + rs["CodBnc"].ToString()
+                                    + ",winding=2"
+                                    + ",PTphase=1"
+                                    + ",ptratio=" + ptratio
+                                    + ",band=3"
+                                    + ",vreg=" + vRegVolts
+                                    + ",revNeutral=Yes " // Does not regulate in reverse direction
+                                    + numEq + Environment.NewLine;
+                                /*
+                                + ",reversible=Yes,revband=3"
+                                + ",revvreg=" + "120"//vRegVolts //TODO
+                                //+ ",revThreshold=10"*/
+
+                                _arqReguladorMT.Append(linha1);
+                                _arqReguladorMT.Append(linha2);
+
+                            }
+                            /*
                             else
                             {
                                 // TODO testar
@@ -134,6 +174,7 @@ namespace ExportadorGeoPerdasDSS
                                 _arqReguladorMT.Append(linha1);
                                 _arqReguladorMT.Append(linha2);
                             }
+                            */
                         }
                     }
                 }
@@ -164,30 +205,21 @@ namespace ExportadorGeoPerdasDSS
             return perdaVazioPer.ToString("0.####");
         }
 
-        // get PT ratio de acordo com a tensao de linha
-        private string GetPTRatio(string tensaoLinha)
+        // get PT ratio de acordo com a tensao
+        private string GetPTRatio(string tensao)
         {
-            //relacao TP default para RT de 7.97kV
-            string ret = "66.4"; ;
-
             // retorno funcao para RT nao alcancado pela seq. eletrica.
-            if (tensaoLinha.Equals(""))
+            if (tensao.Equals(""))
             {
-                return ret;
+                //relacao TP default para RT de 7.97kV
+                return "66.4";
             }
 
-            double tensaoFFd = double.Parse(tensaoLinha);
+            double tensao_d = double.Parse(tensao);
 
-            // verifica se o nivel de tensaaFF eh 34.5kV ou 22.0kV
-            if (tensaoFFd.Equals(19.92))
-            {
-                ret = "166.0";
-            }
-            else if (tensaoFFd.Equals(12.70))
-            {
-                ret = "105.8";
-            }
-            return ret;
+            double ptRatio = 1000 * tensao_d / 120;
+
+            return ptRatio.ToString();
         }
 
         internal void GravaEmArquivo()

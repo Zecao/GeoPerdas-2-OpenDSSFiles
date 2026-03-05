@@ -1,4 +1,5 @@
-﻿using System;
+﻿using OfficeOpenXml.FormulaParsing.Excel.Functions.Logical;
+using System;
 using System.Data.SqlClient;
 using System.Text;
 
@@ -35,13 +36,13 @@ namespace ExportadorGeoPerdasDSS
                     if (_modoReconf)
                     {
                         command.CommandText = "select CodCapMT,CodPonAcopl,CodFas,PotNom_KVAr,kvnom " +
-                            "from " + _par._DBschema + "CemigCapacitorMT where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
+                            "from " + _par._DBschema + "StoredCapacitorMT where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                     }
                     else
                     {
                         command.CommandText = "select CodCapMT,CodPonAcopl,CodFas,PotNom_KVAr,kvnom " +
-                            "from " + _par._DBschema + "CemigCapacitorMT where CodBase=@codbase and CodAlim=@CodAlim";
+                            "from " + _par._DBschema + "StoredCapacitorMT where CodBase=@codbase and CodAlim=@CodAlim";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                         command.Parameters.AddWithValue("@CodAlim", _par._alim);
                     }
@@ -65,6 +66,13 @@ namespace ExportadorGeoPerdasDSS
                             // se banco trifasico
                             if (numFases.Equals("3"))
                             {
+                                linha += "new capacitor." + "CAP" + rs["CodCapMT"].ToString()
+                                       + " bus1=" + "BMT" + rs["CodPonAcopl"].ToString() + ".1.2.3.0"
+                                       + ",Phases=3"
+                                       + ",Conn=wye"
+                                       + ",Kvar=" + rs["PotNom_KVAr"].ToString()
+                                       + ",Kv=" + kvbase + Environment.NewLine;
+                                /*
                                 // calcula potencia por fase
                                 string potFase = AuxFunc.GetPotPorFase(rs["PotNom_KVAr"].ToString());
 
@@ -80,6 +88,7 @@ namespace ExportadorGeoPerdasDSS
                                        + ",Kvar=" + potFase
                                        + ",Kv=" + kvbase + Environment.NewLine;
                                 }
+                                */
                             }
                             // capacitor monofasico
                             else

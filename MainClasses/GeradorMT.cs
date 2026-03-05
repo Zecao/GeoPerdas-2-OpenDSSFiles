@@ -83,7 +83,7 @@ namespace ExportadorGeoPerdasDSS
                             double meanInjectedPower_hour_d = double.Parse(meanInjectedPower_hour);
 
                             // flags if has any PVSystem
-                            if (tipGer.Equals("UFV"))
+                            if ( tipGer.Equals("UFV") || tipGer.Equals("GD.") )
                             {
                                 hasAnyPVSystem = true;
                             }
@@ -92,7 +92,7 @@ namespace ExportadorGeoPerdasDSS
                             string linha = AuxFunc.GetLoadShape(tipGer, CodGeraMT);
 
                             // PVSystem
-                            if (_par._pvMV._geraInvControl && tipGer.Equals("UFV"))
+                            if (_par._pvMV._geraInvControl && hasAnyPVSystem)
                             {
                                 string kVA = (meanInjectedPower_hour_d * 1.2).ToString();
 

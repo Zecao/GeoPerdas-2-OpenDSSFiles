@@ -26,7 +26,6 @@ namespace ExportadorGeoPerdasDSS
             _permRes = permRes;
             _codBase = codBase;
             _path = path;
-            //_trEM = trEM;
             _modelo4condutores = modelo4condutores;
             _alim = alim;
             _dist = dist;

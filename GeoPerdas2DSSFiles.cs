@@ -1,25 +1,28 @@
 ﻿using AuxClasses;
-using ConsoleApplication2.MainClasses;
 using ExportadorGeoPerdasDSS;
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
+//using Npgsql;
 
 namespace ExportadorArqDSS
 {
     class GeoPerdas2DSSFiles
     {
+        //
+        public static string _dbms = "Postgre"; //"SQLServer" "Postgre"
+
         // codbase
-        public static string _codBase = "20221244"; //"2022114950"; //"2021124950"; //"2020014950";  
-        public static string _schema = "dbo.";//"geo2023."; //"geo2022."; //""; //"geo2021." geo2022;
-        public static string _dist = "44";
+        public static string _codBase = "202412401"; // "202412401";   
+        public static string _schema = "dbo."; // "geo2023."; //"geo2022."; //"geo2021." //"dbo." (para 2020); 
+        public static string _dist = "4950"; // CEMIG: 4950 // Alagoas: 44 // CPFL(Paulista): 63 MUX: 401
 
         // mes e ano para a geracao dos arquivos de carga BT e MT
-        public static int _iMes = 12; //   PVSYstemBT 3,4,5,6 2023
-        public static string _ano = "2022"; // 2021 //2022
+        public static int _iMes = 12;
+        public static string _ano = "2024"; // 
 
         public static bool _criaTodosOsMeses = false;  // flag p/ criar todos os meses de carga MT BT e geradores
-        public static bool _criaArqCoordenadas = true; // flag p/ criar arq coordenadas
+        public static bool _criaArqCoordenadas = false; // flag p/ criar arq coordenadas
 
         /* 
         Parameters order _modelPVSystems, _invControlModeMV, _varFollowInvMV, _PVPowerFactorMV
@@ -30,7 +33,7 @@ namespace ExportadorArqDSS
         _varFollowInvMV     -> Default: false (Have to set False to enable Inverter night mode)
         _voltVarcurve =     -> Default: "voltvar_c"
         */
-        public static readonly PVSystemPar _pvMV = new PVSystemPar(true, true); 
+        public static readonly PVSystemPar _pvMV = new PVSystemPar(true, false); 
         public static readonly PVSystemPar _pvLV = new PVSystemPar(false, false);
 
         public static bool _criaDispProtecao = false; // flag p/ dispositivos de protecao (Recloser e Fuses) && taxas de falhas em lines
@@ -42,9 +45,6 @@ namespace ExportadorArqDSS
         // arquivo txt com lista de alimentadores
         public static string _arqLstAlimentadores = "lstAlimentadores.m";
 
-        // lista SEs (usado em reconfiguracao somente)
-        public static string _arqLstSEs = "lstSEs.m";
-
         // arquivo do Excel com somatorio em PU das curvas de carga
         public static readonly string _arqConsumoMensalPU = "somaCurvasCargaPU.xlsx";
 
@@ -55,38 +55,33 @@ namespace ExportadorArqDSS
         public static string _feriado = "Feriado"; //arquivo de feriado
 
         // path do APP - CASA
-        //public static readonly string _path = @"F:\DropboxZecao\Dropbox\0doutorado\0soft\0alimCemig\";
-
-        //CEMIG - Servidor Pertec
-        //public static readonly string _path = @"\\pwnap-pertec01\OPenDSSCemig\2022_reconf\";
-        //public static readonly string _path = @"\\pwnap-pertec01\OPenDSSCemig\2022_CAP\";
-        //public static readonly string _path = @"\\pwnap-pertec01\OPenDSSCemig\2023_2\";
-
-        public static readonly string _path = @"F:\DropboxZecao\Dropbox\0doutorado\0soft\0alimCemig\ALAGOAS\";
-        //public static readonly string _path = @"F:\DropboxZecao\Dropbox\0doutorado\0soft\0alimCemig\ALAGOAS_SE\";
         //public static readonly string _path = @"D:\Users\c055896.NETCEMIG\Desktop\OpenDSSLocal\01_voltvar_PF1\";
         //public static readonly string _path = @"D:\Users\c055896.NETCEMIG\Desktop\OpenDSSLocal\01_voltvar\";
-        //public static readonly string _path = @"D:\Users\c055896.NETCEMIG\Desktop\OpenDSSLocal\01_voltvar_Noite\";
+        //public static readonly string _path = @"D:\Dropbox\0_BDGDs\_CPFL\_DSS_SE\";
+        //public static readonly string _path = @"D:\Dropbox\0_BDGDs\_CPFL\_DSS_SE\";
+        // @"D:\CopiaDropbox\0_BDGDs\5_MUX\dss\
+        // 
+
+        public static readonly string _path = @"D:\CopiaDropbox\0_ERA\2025\9_RTP_Cemig\OpenDSS\";
 
         // TODO FIX this hard coded 
         // sub diretorio recursos permanentes
         public static string _permRes = "0PermRes\\";
 
         // servidor SGBD
-        public static string _banco = "GEOPERDAS2022_AL"; // GEOPERDAS_2022 GEOPERDAS_2021 GEOPERDAS_2020 GEOPERDAS_2019 
+        public static string _banco = "GeoPerdas2023b"; //     
 
-        // banco
         //public static string _dataSource = @"PWNBS-PERTEC01\PTEC";
-        public static string _dataSource = @"DESKTOP-5IU9LKI\MSSQLSERVER2"; 
+        public static string _dataSource = @"TRACER\SQL19"; // 
 
-        // parametros ALAGOAS
-        private readonly static ModeloSDEE _SDEE = new ModeloSDEE(usarCondutoresSeqZero: false, utilizarCurvaDeCargaClienteMTIndividual: false, incluirCapacitoresMT: false, modeloCarga: "PCONST",
+        // parametros          
+        private readonly static ModeloSDEE _SDEE = new ModeloSDEE(usarCondutoresSeqZero: false, utilizarCurvaDeCargaClienteMTIndividual: false, incluirCapacitoresMT: false, modeloCarga: "PCONST", //"PCONST"
            reatanciaTrafos: true);
 
-        // parametros CEMIG
         /*
+        // parametros CEMIG
         private readonly static ModeloSDEE _SDEE = new ModeloSDEE(usarCondutoresSeqZero: false, utilizarCurvaDeCargaClienteMTIndividual: false, incluirCapacitoresMT: true, modeloCarga: "PCONST",
-           reatanciaTrafos: true);
+           reatanciaTrafos: true);        
         */
 
         // FIM membros publicos -> parametros configuraveis usuario
@@ -113,21 +108,48 @@ namespace ExportadorArqDSS
 
         static void Main() //string[] args
         {
-            // parametros banco de dados
-            _connBuilder = new SqlConnectionStringBuilder();
-            _connBuilder.DataSource = _dataSource;
-            _connBuilder.InitialCatalog = _banco;
-            _connBuilder.IntegratedSecurity = true;
+            if (_dbms == "SQLServer")
+            {
+                // parametros banco de dados
+                _connBuilder = new SqlConnectionStringBuilder();
+                _connBuilder.DataSource = _dataSource;
+                _connBuilder.InitialCatalog = _banco;
+                _connBuilder.IntegratedSecurity = true;
 
-            _connBuilder.UserID = "Zecao"; // "Zecao";//@"DESKTOP-5IU9LKI\Zecao";
-            _connBuilder.Password = ""; 
+                //_connBuilder.UserID = "U_DBPERTEC01";
+                //_connBuilder.Password = "294vd!@49s$$3208tD#SS";            
 
-            /* //DEBUG
-            SqlConnection conn = new SqlConnection(_connBuilder.ToString());
-            conn.Open();*/
+                // with IntegratedSecurity = true we dont need this
+                _connBuilder.UserID = "Zecao"; // "Zecao"
+                _connBuilder.Password = "";
 
-            // variaveis auxiliares
-            CarregaVariaveisAux();
+                //DEBUG
+                /*
+                SqlConnection conn = new SqlConnection(_connBuilder.ToString());
+                conn.Open();
+                */
+            }
+            else 
+            {
+
+
+                _connBuilder = new SqlConnectionStringBuilder();
+                _connBuilder.DataSource = _dataSource;
+                _connBuilder.InitialCatalog = _banco;
+                _connBuilder.IntegratedSecurity = true;
+
+                //_connBuilder.UserID = "U_DBPERTEC01";
+                //_connBuilder.Password = "294vd!@49s$$3208tD#SS";            
+
+                // with IntegratedSecurity = true we dont need this
+                _connBuilder.UserID = "Zecao"; // "Zecao"
+                _connBuilder.Password = "";
+
+
+            }
+
+                // variaveis auxiliares
+                CarregaVariaveisAux();
 
             // se modo reconfiguracao
             if (_genAllSubstation)
@@ -173,10 +195,10 @@ namespace ExportadorArqDSS
             
             // Chave MT
             CriaChaveMT();
-            
+            */
             // Transformador MT
             CriaTransformadorMTMTMTBTDSS();
-            
+            /*
             // Capacitor
             if (_SDEE._incluirCapacitoresMT)
             {
@@ -184,22 +206,22 @@ namespace ExportadorArqDSS
             }
             
             CriaSegmentoBTDSS();
-
+            
             // Ramais 
             CriaRamaisDSS();
-
-            // Carga MT
-            CriaCargaMTDSS();
             
-            // Carga BT
-            CriaCargaBTDSS();
-            */
+            // Carga MT
+            CriaCargaMTDSS();           
+
             // Gerador MT
             CriaGeradorMT();
-            /*
-            // Gerador BT
-            CriaGeradorBT();
             
+            // Gerador BT
+            CriaGeradorBT();            
+
+            // Carga BT
+            CriaCargaBTDSS();
+
             // arquivo cabecalho
             CriaCabecalhoDSS();*/
         }
@@ -221,8 +243,13 @@ namespace ExportadorArqDSS
 
                 // gets substation // TODO refactory
                 string substation = System.Text.RegularExpressions.Regex.Replace(alim, @"[\d-]", string.Empty);
-                //
-                substation = "ARD";
+
+                
+                //removes 4 char from Alagoas Substation names
+                if ( _dist.Equals("44") )
+                {
+                    substation = substation.Substring(0, 3);
+                }
 
                 // gets all feeders name from substation //TODO move to Param ?
                 bool ret = CemigFeeders.GetAllFeedersFromSubstationString(substation, _connBuilder, _par);
@@ -235,6 +262,8 @@ namespace ExportadorArqDSS
 
                 // creates dss files
                 CriaArquivosDSS();
+
+                Console.Write("SE do " + alim + " .dss criados\n");
             }
         }
 
@@ -255,8 +284,11 @@ namespace ExportadorArqDSS
                 // creates dss files
                 CriaArquivosDSS();
 
+                Console.Write(alim + " .dss criados\n");
+
                 // TODO
                 //ClassificaCurvaBT curvaBT = new ClassificaCurvaBT(_connBuilder, _par);
+                //Add_IMag_transformer obj = new Add_IMag_transformer(_par); 
             }
         }
 
@@ -406,11 +438,6 @@ namespace ExportadorArqDSS
             if (_structElem._temSegmentoMT)
             {
                 oSegMT.GravaEmArquivo();
-
-                /* // OLD CODE
-                // atualiza parametros 
-                _par = oSegMT.GetParam();
-                */
 
                 // se modo criar arq coordenadas
                 if (_criaArqCoordenadas)

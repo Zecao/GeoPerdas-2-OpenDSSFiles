@@ -334,10 +334,5 @@ namespace ExportadorGeoPerdasDSS
 
             return true;
         }
-        /* //OLD CODE
-        internal Param GetParam()
-        {
-            return _par;
-        }*/
     }
 }

@@ -117,101 +117,16 @@ namespace ExportadorGeoPerdasDSS
                             {
                                 case "ANEEL":
 
-                                    // carga model=2
-                                    linha = "new load.BT_" + rs["CodConsBT"].ToString() + "_M2"
-                                       + " bus1=" + rs["CodPonAcopl"] + fases //OBS1
-                                       + ",Phases=" + numFases
-                                       + ",kv=" + Kv
-                                       + ",kW=" + demanda
-                                       + ",pf=0.92,Vminpu=0.92,Vmaxpu=1.5"
-                                       + ",model=2"
-                                       + ",daily=" + rs["TipCrvaCarga"].ToString()
-                                       + ",status=variable" + Environment.NewLine;
+                                    linha = CriaDSSCargaBTAneel(rs, demanda, fases, numFases, Kv);
 
-                                    // carga model=3
-                                    linha += "new load.BT_" + rs["CodConsBT"].ToString() + "_M3"
-                                        + " bus1=" + rs["CodPonAcopl"] + fases //OBS1
-                                        + ",Phases=" + numFases
-                                        + ",kv=" + Kv
-                                        + ",kW=" + demanda
-                                        + ",pf=0.92,Vminpu=0.92,Vmaxpu=1.5"
-                                        + ",model=3"
-                                        + ",daily=" + rs["TipCrvaCarga"].ToString()
-                                        + ",status=variable";
                                     break;
 
                                 // modelo P constante
                                 case "PCONST":
 
-                                    // multiplica pro 2 uma vez que a funcao AuxFunc.CalcDemanda divide por 2
-                                    double demandaD = double.Parse(demanda) * 2;
-
-                                    if (!_par._modelo4condutores)
-                                    {
-                                        linha = "new load.BT_" + rs["CodConsBT"].ToString() + "_M1"
-                                           + " bus1=" + rs["CodPonAcopl"] + fases
-                                           + ",Phases=" + numFases
-                                           + ",kv=" + Kv
-                                           + ",kW=" + demandaD.ToString()
-                                           + ",pf=0.92,Vminpu=0.92,Vmaxpu=1.5"
-                                           + ",model=1"
-                                           + ",daily=" + rs["TipCrvaCarga"].ToString()
-                                           + ",status=variable";
-                                    }
-                                    else
-                                    {
-                                        /* // OBS: DEBUG
-                                        // nao grava demanda abaixo de 0.001 KWh
-                                        if (demandaD < 0.001)
-                                        {
-                                            continue;
-                                        }
-                                        */
-
-                                        string tipLig = "wye";
-                                        if (numFases == "1")
-                                        {
-                                            tipLig = "wye";
-                                        }
-                                        /* //maneira como ANEEL simula
-                                        if (numFases == "2")
-                                        {
-                                            numFases = "1"; 
-                                            tipLig = "delta"; 
-                                        }*/
-                                        // maneira correta de se simular cargas BI
-                                        if (numFases == "2")
-                                        {
-                                            numFases = "2";
-                                            tipLig = "wye";
-                                        }
-                                        if (numFases == "3")
-                                        {
-                                            tipLig = "delta";
-                                        }
-
-                                        linha = "new load.BT_" + rs["CodConsBT"].ToString() + "_M1"
-                                           + " bus1=" + rs["CodPonAcopl"] + fases //" + prefixoBarraBT
-                                           + ",Phases=" + numFases + ",Conn=" + tipLig
-                                           + ",kv=" + Kv
-                                           + ",kW=" + demandaD.ToString()
-                                           + ",pf=0.92,Vminpu=0.92,Vmaxpu=1.5"
-                                           + ",model=1"
-                                           + ",daily=" + rs["TipCrvaCarga"].ToString()
-                                           + ",status=variable";
-                                    }
+                                    linha = CriaDSSCargaPconstBT(rs, demanda, fases, numFases, Kv);
 
                                     break;
-                            }
-
-                            // alterar numCust=0 p/ cargas do tipo IP (iluminacao publica)
-                            if (rs["TipCrvaCarga"].ToString().Equals("IP"))
-                            {
-                                linha += ",NumCust=0" + Environment.NewLine;
-                            }
-                            else
-                            {
-                                linha += Environment.NewLine;
                             }
 
                             _arqSegmentoBT.Append(linha);
@@ -223,6 +138,120 @@ namespace ExportadorGeoPerdasDSS
                 conn.Close();
             }
             return true;
+        }
+
+        private string CriaDSSCargaPconstBT(SqlDataReader rs, string demanda, string fases, string numFases, string Kv)
+        {
+            string linha;
+
+            if (!_par._modelo4condutores)
+            {
+                linha = "new load.BT_" + rs["CodConsBT"].ToString() + "_M1"
+                   + " bus1=" + rs["CodPonAcopl"] + fases
+                   + ",Phases=" + numFases
+                   + ",kv=" + Kv
+                   + ",kW=" + demanda
+                   + ",pf=0.92,Vminpu=0.92,Vmaxpu=1.5"
+                   + ",model=1"
+                   + ",daily=" + rs["TipCrvaCarga"].ToString()
+                   + ",status=variable";
+            }
+            else
+            {
+                /* // OBS: DEBUG
+                // nao grava demanda abaixo de 0.001 KWh
+                if (demandaD < 0.001)
+                {
+                    continue;
+                }
+                */
+
+                string tipLig = "wye";
+                if (numFases == "1")
+                {
+                    tipLig = "wye";
+                }
+                /* //maneira como ANEEL simula
+                if (numFases == "2")
+                {
+                    numFases = "1"; 
+                    tipLig = "delta"; 
+                }*/
+                // maneira correta de se simular cargas BI
+                if (numFases == "2")
+                {
+                    numFases = "2";
+                    tipLig = "wye";
+                }
+                if (numFases == "3")
+                {
+                    tipLig = "delta";
+                }
+
+                linha = "new load.BT_" + rs["CodConsBT"].ToString() + "_M1"
+                   + " bus1=" + rs["CodPonAcopl"] + fases //" + prefixoBarraBT
+                   + ",Phases=" + numFases + ",Conn=" + tipLig
+                   + ",kv=" + Kv
+                   + ",kW=" + demanda
+                   + ",pf=0.92,Vminpu=0.92,Vmaxpu=1.5"
+                   + ",model=1"
+                   + ",daily=" + rs["TipCrvaCarga"].ToString()
+                   + ",status=variable";
+            }
+
+            // alterar numCust=0 p/ cargas do tipo IP (iluminacao publica)
+            if (rs["TipCrvaCarga"].ToString().Equals("IP"))
+            {
+                linha += ",NumCust=0" + Environment.NewLine;
+            }
+            else
+            {
+                linha += Environment.NewLine;
+            }
+
+            return linha;
+        }
+
+        private string CriaDSSCargaBTAneel(SqlDataReader rs, string demanda, string fases, string numFases, string Kv)
+        {
+            // divide demanda entre 2 cargas
+            double demandaD = double.Parse(demanda) / 2;
+
+            string linha;
+
+            // carga model=2
+            linha = "new load.BT_" + rs["CodConsBT"].ToString() + "_M2"
+                + " bus1=" + rs["CodPonAcopl"] + fases //OBS1
+                + ",Phases=" + numFases
+                + ",kv=" + Kv
+                + ",kW=" + demandaD.ToString()
+                + ",pf=0.92,Vminpu=0.92,Vmaxpu=1.5"
+                + ",model=2"
+                + ",daily=" + rs["TipCrvaCarga"].ToString()
+                + ",status=variable" + Environment.NewLine;
+
+            // carga model=3
+            linha += "new load.BT_" + rs["CodConsBT"].ToString() + "_M3"
+                + " bus1=" + rs["CodPonAcopl"] + fases //OBS1
+                + ",Phases=" + numFases
+                + ",kv=" + Kv
+                + ",kW=" + demandaD.ToString()
+                + ",pf=0.92,Vminpu=0.92,Vmaxpu=1.5"
+                + ",model=3"
+                + ",daily=" + rs["TipCrvaCarga"].ToString()
+                + ",status=variable";
+
+            // alterar numCust=0 p/ cargas do tipo IP (iluminacao publica)
+            if (rs["TipCrvaCarga"].ToString().Equals("IP"))
+            {
+                linha += ",NumCust=0" + Environment.NewLine;
+            }
+            else
+            {
+                linha += Environment.NewLine;
+            }
+
+            return linha;
         }
 
         // A tensao base depende do numero de fases e tambem do trafo.

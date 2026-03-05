@@ -90,7 +90,7 @@ namespace ExportadorGeoPerdasDSS
                             double meanInjectedPower_hour_d = double.Parse(meanInjectedPower_hour);
 
                             // flags if has any PVSystem
-                            if (tipGer.Equals("UFV"))
+                            if ( tipGer.Equals("UFV") || tipGer.Equals("GD.") )
                             {
                                 hasAnyPVSystem = true;
                             }
@@ -102,12 +102,12 @@ namespace ExportadorGeoPerdasDSS
                             string linha = "";
 
                             // PVSystem
-                            if (_par._pvLV._geraInvControl && tipGer.Equals("UFV"))
+                            if (_par._pvLV._geraInvControl && hasAnyPVSystem )
                             {
                                 string kVA = (meanInjectedPower_hour_d * 1.2).ToString();
 
                                 linha += "new PVSystem." + CodGeraBT
-                                + " bus1=" + "100" + rs["CodPonAcopl"] + phasesCom //TODO 
+                                + " bus1=" + rs["CodPonAcopl"] + phasesCom //TODO "100"
                                 + ",Phases=" + numFases
                                 + ",kv=" + tensaoKV
                                 + ",kVA=" + kVA
@@ -120,7 +120,7 @@ namespace ExportadorGeoPerdasDSS
                             else
                             {
                                 linha += "new generator." + CodGeraBT
-                                + " bus1=" + "100" + rs["CodPonAcopl"] + phasesCom //TODO 
+                                + " bus1=" + rs["CodPonAcopl"] + phasesCom //TODO 
                                 + ",Phases=" + numFases
                                 + ",kv=" + tensaoKV
                                 + ",kW=" + meanInjectedPower_hour
@@ -133,8 +133,9 @@ namespace ExportadorGeoPerdasDSS
                             _arqGeradorBT.Append(linha);
                         }
 
+                        //_par._pvLV._invControlMode.Equals("VOLTVAR") NAO USADO
                         // adds InvControl if invControlMode = voltvar and has any PVSystem
-                        if (_par._pvLV._geraInvControl && _par._pvLV._invControlMode.Equals("VOLTVAR") && hasAnyPVSystem)
+                        if (_par._pvLV._geraInvControl && hasAnyPVSystem)
                         {
                             string linha2 = "New InvControl.InvPVCtrl"
                                 + " mode=VOLTVAR"

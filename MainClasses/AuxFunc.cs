@@ -156,32 +156,42 @@ namespace ExportadorGeoPerdasDSS
         // converte tensao fase-fase para fase-neutro
         public static string GetTensaoFN(string tensaoFF)
         {
-            string ret = "7.967";
-
             //condicao de retorno
             if (tensaoFF.Equals(""))
             {
-                return ret;
+                return "7.967";
             }
 
-            double tensaoFN = double.Parse(tensaoFF);
+            double tensaoFF_d = double.Parse(tensaoFF);
 
             //verifica se tensao eh igual a 34.5 ou 22.0kV
-            if (tensaoFN.Equals(34.5))
+            if (tensaoFF_d.Equals(34.5))
             {
-                ret = "19.92";
+                return "19.92";
             }
-            else if (tensaoFN.Equals(22.0))
+            if (tensaoFF_d.Equals(22.0))
             {
-                ret = "12.70";
+                return "12.70";
             }
-            return ret;
+            if (tensaoFF_d.Equals(13.2))
+            {
+                return "7.62";
+            }
+            if (tensaoFF_d.Equals(11.9))
+            {
+                return "6.87";
+            }
+            if (tensaoFF_d.Equals(11.4))
+            {
+                return "6.58";
+            }
+            return "7.967";
         }
 
         // Returns k factor (transforms Energy into a power or demand value) 
         internal static string GetFatorK(string tipGer)
         {
-            if (tipGer.Equals("UFV"))
+            if ( tipGer.Equals("UFV") || tipGer.Equals("GD.") )
                 return "7.16";
             else return "24"; // hydraulic or powerplants 
         }
@@ -190,7 +200,7 @@ namespace ExportadorGeoPerdasDSS
         {
             string cab = "new loadshape.c" + CodGeraMT + " npts=24,interval=1.0,mult=";
 
-            if (tipGer.Equals("UFV"))
+            if ( tipGer.Equals("UFV") || tipGer.Equals("GD.") )
             {
                 return cab + "[0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.17,0.47,0.7,0.9,1,1,0.93,0.8,0.53,0.33,0.2,0.13,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001]" + Environment.NewLine;
             }
@@ -240,10 +250,6 @@ namespace ExportadorGeoPerdasDSS
 
             //Pega a potência ativa
             double demanda = dConsMes / somaConsumoMensalPU;
-
-            // OLD CODE
-            // OBS: divide demanda por 2, uma vez que o modelo atual aloca 2 cargas para cada consumidor
-            //demanda /= 2;
 
             // retorna demanda
             return demanda.ToString("0.#####");

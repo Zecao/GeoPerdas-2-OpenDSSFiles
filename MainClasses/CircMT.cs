@@ -105,18 +105,24 @@ namespace ExportadorGeoPerdasDSS
                 using (SqlCommand command = conn.CreateCommand())
                 {
                     //Verifica se há mais de 1 trecho saindo do PelPrincipal
-                    command.CommandText = "select CodPonAcopl,TenNom_kV,TenOpe_pu,CodSegmMT,count(CodSegmMT) over() as 'rowCount' from " + _par._DBschema + "StoredCircmt as [ct]"
-                        + "inner join " + _par._DBschema + "StoredSegmentoMT as [seg] on [seg].CodPonAcopl1 = [ct].CodPonAcopl ";
+                    command.CommandText = "select [t].CodBase,[t].CodAlim,[t].CodPonAcopl,[t].TenNom_kV,[t].TenOpe_pu,[t].CodSegmMT," +
+                        "[t].CodPonAcopl1,[t].CodPonAcopl2,count([t].CodSegmMT) over() as 'rowCount' " +
+                        "from ( select [ct].CodBase,[ct].CodAlim,CodPonAcopl,TenNom_kV,TenOpe_pu,CodSegmMT,CodPonAcopl1,CodPonAcopl2 from " +
+                        _par._DBschema + "StoredCircmt as [ct] " +
+                        "inner join " + _par._DBschema + "StoredSegmentoMT as [seg] on [seg].CodPonAcopl1 = [ct].CodPonAcopl " +
+                        "UNION select [ct].CodBase,[ct].CodAlim,CodPonAcopl,TenNom_kV,TenOpe_pu,CodSegmMT,CodPonAcopl1,CodPonAcopl2 from " +
+                        _par._DBschema + "StoredCircmt as [ct] " +
+                        "inner join " + _par._DBschema + "StoredSegmentoMT as [seg] on [seg].CodPonAcopl2 = [ct].CodPonAcopl ) as [t] ";
 
                     // se modo reconfiguracao 
                     if (_modoReconf)
                     {
-                        command.CommandText += "where [ct].CodBase=@codbase and [ct].CodAlim in (" + _par._conjAlim + ")";
+                        command.CommandText += "where [t].CodBase=@codbase and [t].CodAlim in (" + _par._conjAlim + ")";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                     }
                     else
                     {
-                        command.CommandText += "where [ct].CodBase=@codbase and [ct].CodAlim=@CodAlim";
+                        command.CommandText += "where [t].CodBase=@codbase and [t].CodAlim=@CodAlim";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                         command.Parameters.AddWithValue("@CodAlim", _par._alim);
                     }
@@ -128,44 +134,68 @@ namespace ExportadorGeoPerdasDSS
                         // verifica se NAO tem linhas
                         if (!rs.HasRows)
                         {
-                            Console.Write(_par._alim + ": não localizado na StoredCircMT");
+                            Console.Write("1o PAC " + _par._alim + " não associado com SegmentoMT." + Environment.NewLine);
                         }
                         else
                         {
+                            // TODO REVISAR !!
+                            // exibe msg de erro.
+                            /*
+                            if (!_modoReconf)
+                            {
+
+                            }
+                            if (_modoReconf)
+                            {
+                                _Alim_PAC = "CABFIC";
+                            }*/
+
+                            string pacCTME = rs["CodPonAcopl"].ToString();
+                            string pac1 = rs["CodPonAcopl1"].ToString();
+                            string pac2 = rs["CodPonAcopl2"].ToString();
+                            string terminal="terminal=1";
+
                             // PAC ALIM
-                            _Alim_PAC = "BMT" + rs["CodPonAcopl"].ToString(); //OBS: necessario adicionar prefixo BMT TODO
+                            _Alim_PAC = "BMT" + pacCTME; //OBS: necessario adicionar prefixo BMT TODO
                             _TenNom_kV = rs["TenNom_kV"].ToString();
                             _TenOpe_pu = rs["TenOpe_pu"].ToString();
-
-
+                            
                             // preenche trecho Energymeter
+                            // verifica N de linhas
                             if (rs["rowCount"].ToString().Equals("1"))
                             {
+                                // se pac CTMT != pac1 deve se alocar no terminal 1 
+                                if (!pacCTME.Equals(pac1))
+                                {
+                                    terminal = "terminal=2";
+                                }
+
                                 trechEM = rs["CodSegmMT"].ToString();
                             }
                             // se ha mais de 1 trecho p/ o PAC de inicio do alim, cria trecho ficticio a montante
                             else
                             {
-                                Console.Write("Há mais de 1 trecho para alocação do Energymeter! " + _par._alim + Environment.NewLine);
-
-                                // trecho ficticio p/ correcao 
+                                // trecho ficticio p/ correcao OU whole Substation 
                                 trechEM = "FIC";
 
-                                // atualiza PAC Alim
-                                string oldPac = _Alim_PAC; //mas antes guarda old PAC p/ ser usado abaixo. 
+                                // keeps old PAC
+                                string oldPac = _Alim_PAC; 
+
+                                // new PAC 
                                 _Alim_PAC = "CABFIC";
 
-                                // linha Energymeter
-                                _linhaEM += "new line." + "SMT_" + trechEM + " bus1=" + _Alim_PAC + ".1.2.3,bus2=" + oldPac + ".1.2.3,Phases=3,r1=0,x1=0.0001,Length=0.001,Units=km" + Environment.NewLine;
-                            }
+                                // if NOT substation mode
+                                if (! _modoReconf)
+                                {
+                                    Console.Write("Há mais de 1 trecho para alocação do Energymeter! " + _par._alim + Environment.NewLine);
 
-                            if (_modoReconf)
-                            {
-                                _Alim_PAC = "CABFIC";
+                                    // linha Energymeter
+                                    _linhaEM += "new line." + "SMT_" + trechEM + " bus1=" + _Alim_PAC + ".1.2.3,bus2=" + oldPac + ".1.2.3,Phases=3,r1=0,x1=0.0001,Length=0.001,Units=km" + Environment.NewLine;
+                                }
                             }
 
                             // cria linha de alocacao Energymeter //OBS: necessario adicionar prefixo "_SMT"
-                            _linhaEM += "new energymeter.carga element=line." + "SMT_" + trechEM + ",terminal=1" + Environment.NewLine;
+                            _linhaEM += "new energymeter.carga element=line." + "SMT_" + trechEM + "," + terminal + Environment.NewLine;                            
                         }
                     }
                 }
@@ -179,7 +209,11 @@ namespace ExportadorGeoPerdasDSS
         {
             string linha = "";
 
-            // 
+            //ENERGYMETER
+            linha = _linhaEM;
+
+            // OLD CODE DEL
+            /*
             if (_modoReconf)
             {
                 // OBS: aloca medidor no terminal 2
@@ -188,7 +222,7 @@ namespace ExportadorGeoPerdasDSS
             else
             {
                 linha = _linhaEM;
-            }
+            }*/
 
             // voltage bases // TODO
             if (_par._dist.Equals("44"))
@@ -204,8 +238,8 @@ namespace ExportadorGeoPerdasDSS
             linha += "CalcVoltageBases" + Environment.NewLine;
 
             // Aumento do numero de iteracoes OpenDSS
-            linha += "Set MaxIter = 400" + Environment.NewLine;
-            linha += "Set MaxControlIter = 400" + Environment.NewLine;
+            linha += "Set MaxIter = 1000" + Environment.NewLine;
+            linha += "Set MaxControlIter = 1000" + Environment.NewLine;
 
             // 
             linha += Environment.NewLine + "! Solve mode=daily,hour=0,number=24,stepsize=1h" + Environment.NewLine;
@@ -244,18 +278,6 @@ namespace ExportadorGeoPerdasDSS
             + ",pu=" + _TenOpe_pu
             + ",r1=0,x1=0.0001"
             + Environment.NewLine + Environment.NewLine;
-
-            /* OLD CODE
-            //New "Circuit.AXAU03" basekv=13.8 pu=1.04 bus1="179780895" r1=0 x1=0.0001
-            if (_modoReconf)
-            {
-                return "new circuit.alim" + _par._alim
-                + " bus1=" + "CABFIC" // OBS: + ".1.2.3"
-                + ",basekv=" + _TenNom_kV 
-                + ",pu=" + _TenOpe_pu 
-                + ",r1=0,x1=0.0001"
-                + Environment.NewLine + Environment.NewLine;
-            } */
         }
 
         // funcao que cria a string do arquivo masterDSS
@@ -320,7 +342,6 @@ namespace ExportadorGeoPerdasDSS
                 linha += "Redirect " + _par._alim + "GeradorMT_" + AuxFunc.IntMes2strMes(_iMes) + ".dss" + Environment.NewLine;
             }
 
-            // TODO implementar
             if (_structElem._temGeradorBT)
             {
                 linha += "Redirect " + _par._alim + "GeradorBT_" + AuxFunc.IntMes2strMes(_iMes) + ".dss" + Environment.NewLine;

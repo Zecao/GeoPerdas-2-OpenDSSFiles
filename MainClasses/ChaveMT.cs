@@ -70,7 +70,6 @@ namespace ExportadorGeoPerdasDSS
                             string lineCode = "tieSwitch";
                             string codChave = rs["CodChvMT"].ToString();
 
-
                             //se chave mono
                             if (numFases.Equals("1"))
                             {

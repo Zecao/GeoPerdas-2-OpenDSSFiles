@@ -120,13 +120,40 @@ namespace ExportadorGeoPerdasDSS
             string numFases = AuxFunc.GetNumFases(rs["CodFas"].ToString());
             string tensaoFF = AuxFunc.Check_TensaoLinhaPreenchida(rs["TnsLnh_kV"].ToString());
 
-            //
+            // OBS: demanda deve ser divida por 2 modelo ANEEL
             string demanda = AuxFunc.CalcDemanda(consumoMes, _iMes, _ano, rs["TipCrvaCarga"].ToString(), _numDiasFeriadoXMes, _somaCurvaCargaDiariaPU);
 
             string linha = "";
-            //
-            if (_SDEE._utilizarCurvaDeCargaClienteMTIndividual)
+            
+            // modo 
+            if ( ! _SDEE._utilizarCurvaDeCargaClienteMTIndividual)
             {
+                // se modelo de carga ANEEL
+                switch (_SDEE._modeloCarga)
+                {
+                    case "ANEEL":
+
+                        linha = CriaDSSCargaMTAneel(rs, demanda, fases, numFases, tensaoFF);
+
+                        break;
+
+                    case "PCONST":
+
+                        linha = CriaDSSCargaPconst(rs, demanda, fases, numFases, tensaoFF);
+
+                        break;
+
+                    // TODO
+                    case "model8":
+
+                        //linha = CriaDSSCargaMTcomCurvaAneel(rs, demanda, fases, numFases, tensaoFF);
+
+                        break;
+                }
+            }
+            else
+            {
+                // OLD CODE
                 // se modelo de carga ANEEL
                 switch (_SDEE._modeloCarga)
                 {
@@ -143,26 +170,57 @@ namespace ExportadorGeoPerdasDSS
                         break;
                 }
             }
-            else
-            {
-                // se modelo de carga ANEEL
-                switch (_SDEE._modeloCarga)
-                {
-                    case "ANEEL":
-
-                        linha = CriaDSSCargaMTAneel(rs, demanda, fases, numFases, tensaoFF);
-
-                        break;
-
-                    case "PCONST":
-
-                        linha = CriaDSSCargaPconst(rs, demanda, fases, numFases, tensaoFF);
-
-                        break;
-                }
-            }
             return linha;
         }
+
+        private string CriaDSSCargaPconst(SqlDataReader rs, string demanda, string fases, string numFases, string tensaoFF)
+        {
+            string linha;
+
+            linha = "new load." + rs["CodConsMT"].ToString() + "M1"
+                + " bus1=" + "BMT" + rs["CodPonAcopl"] + fases //OBS1
+                + ",Phases=" + numFases
+                + ",kv=" + tensaoFF
+                + ",kW=" + demanda
+                + ",pf=0.92,Vminpu=0.93,Vmaxpu=1.5"
+                + ",model=1"
+                + ",daily=" + rs["TipCrvaCarga"].ToString()
+                + ",status=variable" + Environment.NewLine;
+
+            return linha;
+        }
+
+        private string CriaDSSCargaMTAneel(SqlDataReader rs, string demanda, string fases, string numFases, string tensaoFF)
+        {
+            // divide demanda entre 2 cargas
+            double demandaD = double.Parse(demanda) / 2;
+
+            string linha;
+            // carga model=2
+            linha = "new load." + rs["CodConsMT"].ToString() + "M2"
+                + " bus1=" + "BMT" + rs["CodPonAcopl"] + fases //OBS1
+                + ",Phases=" + numFases
+                + ",kv=" + tensaoFF
+                + ",kW=" + demandaD.ToString()
+                + ",pf=0.92,Vminpu=0.93,Vmaxpu=1.5"
+                + ",model=2"
+                + ",daily=" + rs["TipCrvaCarga"].ToString()
+                + ",status=variable" + Environment.NewLine;
+
+            // carga model=3
+            linha += "new load." + rs["CodConsMT"].ToString() + "M3"
+                + " bus1=" + "BMT" + rs["CodPonAcopl"] + fases //OBS1
+                + ",Phases=" + numFases
+                + ",kv=" + tensaoFF
+                + ",kW=" + demandaD.ToString()
+                + ",pf=0.92,Vminpu=0.93,Vmaxpu=1.5"
+                + ",model=3"
+                + ",daily=" + rs["TipCrvaCarga"].ToString()
+                + ",status=variable" + Environment.NewLine;
+
+            return linha;
+        }
+
 
         private string CriaDSSCargaMTcomCurvaAneel(SqlDataReader rs, string demanda, string fases, string numFases, string tensaoFF)
         {
@@ -237,51 +295,6 @@ namespace ExportadorGeoPerdasDSS
             return linha;
         }
 
-        private string CriaDSSCargaPconst(SqlDataReader rs, string demanda, string fases, string numFases, string tensaoFF)
-        {
-            string linha;
-            double demandaD = double.Parse(demanda) * 2;
-
-            linha = "new load." + rs["CodConsMT"].ToString() + "M1"
-                + " bus1=" + "BMT" + rs["CodPonAcopl"] + fases //OBS1
-                + ",Phases=" + numFases
-                + ",kv=" + tensaoFF
-                + ",kW=" + demandaD.ToString()
-                + ",pf=0.92,Vminpu=0.93,Vmaxpu=1.5"
-                + ",model=1"
-                + ",daily=" + rs["TipCrvaCarga"].ToString()
-                + ",status=variable" + Environment.NewLine;
-
-            return linha;
-        }
-
-        private string CriaDSSCargaMTAneel(SqlDataReader rs, string demanda, string fases, string numFases, string tensaoFF)
-        {
-            string linha;
-            // carga model=2
-            linha = "new load." + rs["CodConsMT"].ToString() + "M2"
-                + " bus1=" + "BMT" + rs["CodPonAcopl"] + fases //OBS1
-                + ",Phases=" + numFases
-                + ",kv=" + tensaoFF
-                + ",kW=" + demanda
-                + ",pf=0.92,Vminpu=0.93,Vmaxpu=1.5"
-                + ",model=2"
-                + ",daily=" + rs["TipCrvaCarga"].ToString()
-                + ",status=variable" + Environment.NewLine;
-
-            // carga model=3
-            linha += "new load." + rs["CodConsMT"].ToString() + "M3"
-                + " bus1=" + "BMT" + rs["CodPonAcopl"] + fases //OBS1
-                + ",Phases=" + numFases
-                + ",kv=" + tensaoFF
-                + ",kW=" + demanda
-                + ",pf=0.92,Vminpu=0.93,Vmaxpu=1.5"
-                + ",model=3"
-                + ",daily=" + rs["TipCrvaCarga"].ToString()
-                + ",status=variable" + Environment.NewLine;
-
-            return linha;
-        }
 
         // OBS: cargas de MT criadas com PotCOnst
         private string CriaDSSCargaMTcomCurva(SqlDataReader rs, string demanda, string fases, string numFases, string tensaoFF)
@@ -289,6 +302,8 @@ namespace ExportadorGeoPerdasDSS
             string linha;
 
             string codCliMT = rs["CodConsMT"].ToString();
+
+            // TODO multiplica por 2
 
             // se cliente MT esta no dicionario de curvas de carga
             if (_curvasTipicasClientesMT.ContainsKey(codCliMT))

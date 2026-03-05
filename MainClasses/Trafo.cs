@@ -468,38 +468,6 @@ new transformer.873969PT_1 Phases=1,Windings=2,Buses=[BMT174122333.1.2 BMT174122
 
             return linha;
         }
-        /* //OLD CODE
-        // cria string trafo trifasico MVMV delta / delta
-        private string CriaStringTrafoTrifasicoMTMT(SqlDataReader rs, string faseDSS, string barraBT, string tensaoFF, string pot, string descr, string tensaoFFsec)
-        {
-            // TODO OBS: comentado pois alterava a tensao de linha correta do PT 34,5 kV 
-            //tensaoFF = TrataTensaoLinhaANEEL(tensaoFF,"4");
-            string linha;
-
-            //
-            linha = "new transformer.TRF_" + rs["CodTrafo"].ToString()
-                    + " Phases=3"
-                    + ",Windings=2"
-                    + ",Buses=[" + "BMT" + rs["CodPonAcopl1"].ToString() + ".1.2.3" //OBS1
-                    + ",BMT" + barraBT + ".1.2.3]"
-                    + ",Conns=[wye,wye]"
-                    + ",kvs=[" + tensaoFF + "," + tensaoFFsec + "]"
-                    + ",kvas=[" + pot + " " + pot + "]"
-                    + ",Taps=[1," + rs["Tap_pu"].ToString() + "]";
-
-            // se modo reatancia
-            if (_SDEE._reatanciaTrafos)
-            {
-                linha += ",XHL=" + rs["ReatHL_%"].ToString();
-            }
-
-            linha += ",%loadloss=" + rs["Resis_%"].ToString()
-                    + ",%noloadloss=" + rs["PerdVz_%"].ToString()
-                    + " !" + descr + Environment.NewLine;
-
-            return linha;
-        }
-        */
 
         private string GetNomeArq()
         {
