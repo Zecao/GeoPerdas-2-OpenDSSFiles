@@ -146,25 +146,21 @@ namespace ExportadorGeoPerdasDSS
                     command.CommandText = "";
 
                     if (_modoReconf)
-                    {
-                        command.CommandText += "select CodPonAcopl1 as 'PAC', CoordPAC1_x,CoordPAC1_y from " + _par._DBschema
-                            + "StoredSegmentoMT where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")" +
-                        " union " +
-                        "select CodPonAcopl2 as 'PAC', CoordPAC1_x,CoordPAC1_y from " + _par._DBschema + "StoredSegmentoMT where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
+                    {   
+                        // TODO testar
 
-                        command.Parameters.AddWithValue("@codbase", _par._codBase);
+                        command.CommandText += "select PAC, longitude, latitude from " + _par._DBschema
+                            + "coord where CodAlim in (" + _par._conjAlim + ")";      
+
                     }
                     else
                     {
-                        command.CommandText += "select CodPonAcopl1 as 'PAC', CoordPAC1_x,CoordPAC1_y from " + _par._DBschema
-                            + "StoredSegmentoMT where CodBase=@codbase and CodAlim=@CodAlim"
-                            + " union "
-                            + "select CodPonAcopl2 as 'PAC', CoordPAC1_x,CoordPAC1_y from " + _par._DBschema
-                            + "StoredSegmentoMT where CodBase=@codbase and CodAlim=@CodAlim";
+                        command.CommandText += "select PAC, longitude, latitude from " + _par._DBschema
+                            + "coord where CodAlim=@CodAlim ";
 
-                        command.Parameters.AddWithValue("@codbase", _par._codBase);
                         command.Parameters.AddWithValue("@CodAlim", _par._alim);
                     }
+
                     using (var rs = command.ExecuteReader())
                     {
                         // verifica ocorrencia de elemento no banco

@@ -9,17 +9,19 @@ namespace ExportadorArqDSS
 {
     class GeoPerdas2DSSFiles
     {
-        //
+        //                                                 
         public static string _dbms = "Postgre"; //"SQLServer" "Postgre"
+        public static string _banco = "GEO_SIGR_PERDAS_CEMIG_2024"; // servidor SGBD
+        public static string _dataSource = "localhost"; // PostgreSQL 
+        public static string _schema = "GeoPerdas2023b."; // SQlServer: dbo. Postgre: GeoPerdas2023b.
 
         // codbase
         public static int _codBase = 2024124950; // CPFL:20231263 Cemig:2022124950 EquatorialMA:20241237 Energisa-MT: 202412405 MS:202312404
-        public static string _schema = "GeoPerdas2023b."; // SQlServer: dbo. Postgre: GeoPerdas2023b.
         public static string _dist = "4950"; //
 
         // mes e ano para a geracao dos arquivos de carga BT e MT
         public static int _iMes = 12;
-        public static string _ano = "2023"; //
+        public static string _ano = "2024"; //
 
         public static bool _criaTodosOsMeses = false;  // flag p/ criar todos os meses de carga MT BT e geradores
         public static bool _criaArqCoordenadas = false; // flag p/ criar arq coordenadas
@@ -60,16 +62,12 @@ namespace ExportadorArqDSS
         //public static readonly string _path = @"D:\Dropbox\0_BDGDs\_CPFL\_DSS_SE\";
         //public static readonly string _path = @"D:\CopiaDropbox\0_BDGDs\_CPFL\_DSS_2025\";
         //public static readonly string _path = @"D:\CopiaDropbox\0_BDGDs\2_Equatorial_MA\DSS\";
-        public static readonly string _path = @"D:\CopiaDropbox\0_ERA\2025\9_RTP_Cemig\OpenDSS\";
+        public static readonly string _path = @"D:\CopiaDropbox\0_ERA\2026\07_RTP_Cemig\0_paper_setPointDinamico\alim2024\";
 
         // TODO FIX this hard coded 
         // sub diretorio recursos permanentes
         public static string _permRes = "0PermRes\\";
 
-        // servidor SGBD
-        public static string _banco = "GEO_SIGR_PERDAS"; //"GeoPerdas2023b"; 
-
-        public static string _dataSource = "localhost";// @"TRACER\MSSQLSERVER"
 
         // parametros CPFL CELPE ALAGOAS        
         private readonly static ModeloSDEE _SDEE = new ModeloSDEE(usarCondutoresSeqZero: false, utilizarCurvaDeCargaClienteMTIndividual: false, incluirCapacitoresMT: false, modeloCarga: "PCONST", //"PCONST"
