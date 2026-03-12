@@ -9,11 +9,16 @@ namespace ExportadorArqDSS
 {
     class GeoPerdas2DSSFiles
     {
-        //                                                 
+        // parametros banco de dados                                               
         public static string _dbms = "Postgre"; //"SQLServer" "Postgre"
-        public static string _banco = "GEO_SIGR_PERDAS_CEMIG_2024"; // servidor SGBD
         public static string _dataSource = "localhost"; // PostgreSQL 
+        public static string _banco = "GEO_SIGR_PERDAS_CEMIG_2024"; // servidor SGBD
         public static string _schema = "GeoPerdas2023b."; // SQlServer: dbo. Postgre: GeoPerdas2023b.
+
+        // path
+        //public static readonly string _path = @"D:\CopiaDropbox\0_BDGDs\_CPFL\_DSS_2025\";
+        //public static readonly string _path = @"D:\CopiaDropbox\0_BDGDs\2_Equatorial_MA\DSS\";
+        public static readonly string _path = @"D:\CopiaDropbox\0_ERA\2026\07_RTP_Cemig\1_alim2024\";
 
         // codbase
         public static int _codBase = 2024124950; // CPFL:20231263 Cemig:2022124950 EquatorialMA:20241237 Energisa-MT: 202412405 MS:202312404
@@ -23,10 +28,11 @@ namespace ExportadorArqDSS
         public static int _iMes = 12;
         public static string _ano = "2024"; //
 
+        // 
         public static bool _criaTodosOsMeses = false;  // flag p/ criar todos os meses de carga MT BT e geradores
-        public static bool _criaArqCoordenadas = false; // flag p/ criar arq coordenadas
+        public static bool _criaArqCoordenadas = true; // flag p/ criar arq coordenadas
 
-        /* 
+        /* // parametros PVSystem / generators
         Parameters order _modelPVSystems, _invControlModeMV, _varFollowInvMV, _PVPowerFactorMV
 
         _modelPVSystems     -> False = exports PVSystems as generator model=1
@@ -38,17 +44,15 @@ namespace ExportadorArqDSS
         public static readonly PVSystemPar _pvMV = new PVSystemPar(true, false); 
         public static readonly PVSystemPar _pvLV = new PVSystemPar(false, false);
 
+        // 
         public static bool _criaDispProtecao = false; // flag p/ dispositivos de protecao (Recloser e Fuses) && taxas de falhas em lines
         public static bool _modelo4condutores = false; //modelo 4 condutor BT
 
-        // cria arquivo DSS com 2 alimentadores para uso da Reconfiguracao
+        // cria arquivo DSS unificando alimentadores (e.g. estudos de reconfiguracao)
         public static bool _genAllSubstation = false; // Generates all substation feeders as one. Uses the first feeder for directory name.
 
         // arquivo txt com lista de alimentadores
         public static string _arqLstAlimentadores = "lstAlimentadores.m";
-
-        // arquivo do Excel com somatorio em PU das curvas de carga
-        public static readonly string _arqConsumoMensalPU = "somaCurvasCargaPU.xlsx";
 
         // arquivo do Excel com curvas individuais dos clientes primarios
         public static readonly string _arqCurvaCargaCliMT = "curvasTipicasClientesMT_2018.xlsx";
@@ -56,32 +60,23 @@ namespace ExportadorArqDSS
         // prefixo arquivo .txt de feriados
         public static string _feriado = "Feriados"; //arquivo de feriado
 
-        // path do APP - CASA
-        //public static readonly string _path = @"D:\Users\c055896.NETCEMIG\Desktop\OpenDSSLocal\01_voltvar_PF1\";
-        //public static readonly string _path = @"D:\Users\c055896.NETCEMIG\Desktop\OpenDSSLocal\01_voltvar\";
-        //public static readonly string _path = @"D:\Dropbox\0_BDGDs\_CPFL\_DSS_SE\";
-        //public static readonly string _path = @"D:\CopiaDropbox\0_BDGDs\_CPFL\_DSS_2025\";
-        //public static readonly string _path = @"D:\CopiaDropbox\0_BDGDs\2_Equatorial_MA\DSS\";
-        public static readonly string _path = @"D:\CopiaDropbox\0_ERA\2026\07_RTP_Cemig\0_paper_setPointDinamico\alim2024\";
-
         // TODO FIX this hard coded 
         // sub diretorio recursos permanentes
         public static string _permRes = "0PermRes\\";
 
-
-        // parametros CPFL CELPE ALAGOAS        
-        private readonly static ModeloSDEE _SDEE = new ModeloSDEE(usarCondutoresSeqZero: false, utilizarCurvaDeCargaClienteMTIndividual: false, incluirCapacitoresMT: false, modeloCarga: "PCONST", //"PCONST"
-           reatanciaTrafos: true);
-
         /*
-        // parametros CEMIG 
-        private readonly static ModeloSDEE _SDEE = new ModeloSDEE(usarCondutoresSeqZero: false, utilizarCurvaDeCargaClienteMTIndividual: false, incluirCapacitoresMT: true, modeloCarga: "PCONST",
-           reatanciaTrafos: true);        
+        // parametros CPFL CELPE ALAGOAS        
+        private readonly static ModeloSDEE _SDEE = new ModeloSDEE(usarCondutoresSeqZero: false, utilizarCurvaDeCargaClienteMTIndividual: false, incluirCapacitoresMT: false, modeloCarga: "PCONST",
+           reatanciaTrafos: true);
         */
+        
+        // parametros CEMIG 
+        private readonly static ModeloSDEE _SDEE = new ModeloSDEE(usarCondutoresSeqZero: false, utilizarCurvaDeCargaClienteMTIndividual: false, incluirCapacitoresMT: false, modeloCarga: "PCONST",
+           reatanciaTrafos: true);        
+        
+        // FIM parametros configuraveis usuario
 
-        // FIM membros publicos -> parametros configuraveis usuario
-
-        //membros privados
+        //
         public static Param _par;
 
         private static NpgsqlConnectionStringBuilder _connBuilder;
@@ -98,6 +93,8 @@ namespace ExportadorArqDSS
         private static Dictionary<string, double> _somaCurvaCargaDiariaPU;
 
         // OLD CODE
+        // arquivo do Excel com somatorio em PU das curvas de carga
+        public static readonly string _arqConsumoMensalPU = "somaCurvasCargaPU.xlsx";
         // utilizado por CargaMT e CargaBT
         private static Dictionary<string, List<string>> _curvasTipicasClientesMT;
 
@@ -143,6 +140,7 @@ namespace ExportadorArqDSS
             // UNDER CONSTRUCTION
             // Create LoadShape .dss files
             //Create_LoadShapes_DSSFile();            
+            
             
             // Segmento MT
             CriaSegmentoMTDSS();
@@ -556,6 +554,7 @@ namespace ExportadorArqDSS
             // realiza consulta 
             oCircMT.ConsultaStoredCircMT();
 
+            // 
             if (! oCircMT._strCab.Equals(""))
             {
                 // grava arquivo para ser utilizado pela OpenDSS 

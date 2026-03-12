@@ -130,8 +130,7 @@ namespace ExportadorGeoPerdasDSS
             }
         }
 
-        //modelo
-        //new line.TR1113 bus1=1575B.1.2.3,bus2=1568B.1.2.3,Phases=3,Linecode=CAB103_3_3,Length=0.038482,Units=km
+
         public bool ConsultaBusCoord(bool _modoReconf)
         {
             _arqCoord = new StringBuilder();
@@ -171,7 +170,7 @@ namespace ExportadorGeoPerdasDSS
 
                         while (rs.Read())
                         {
-                            string linhaPAC1 = rs["PAC"] + "," + rs["CoordPAC1_x"] + "," + rs["CoordPAC1_y"] + Environment.NewLine;
+                            string linhaPAC1 = rs["PAC"] + "," + rs["longitude"] + "," + rs["latitude"] + Environment.NewLine;
 
                             _arqCoord.Append(linhaPAC1);
                         }
@@ -179,50 +178,6 @@ namespace ExportadorGeoPerdasDSS
 
                 }
 
-                using (NpgsqlCommand command = conn.CreateCommand())
-                {
-                    command.CommandText = "";
-
-                    if (_modoReconf)
-                    {
-                        command.CommandText += "select CodPonAcopl1 as 'PAC', CoordPAC1_x,CoordPAC1_y from " + _par._DBschema
-                            + "StoredSegmentoMT where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")" +
-                        " union " +
-                        "select CodPonAcopl2 as 'PAC', CoordPAC1_x,CoordPAC1_y from " + _par._DBschema + "StoredSegmentoMT where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
-
-                        command.Parameters.AddWithValue("@codbase", _par._codBase);
-                    }
-                    else
-                    {
-                        command.CommandText += "select CodPonAcopl1 as 'PAC', CoordPAC1_x,CoordPAC1_y from " + _par._DBschema
-                            + "StoredSegmentoBT where CodBase=@codbase and CodAlim=@CodAlim"
-                            + " union "
-                            + "select CodPonAcopl2 as 'PAC', CoordPAC1_x,CoordPAC1_y from " + _par._DBschema
-                            + "StoredSegmentoBT where CodBase=@codbase and CodAlim=@CodAlim";
-
-                        command.Parameters.AddWithValue("@codbase", _par._codBase);
-                        command.Parameters.AddWithValue("@CodAlim", _par._alim);
-                    }
-                    using (var rs = command.ExecuteReader())
-                    {
-                        // verifica ocorrencia de elemento no banco
-                        if (!rs.HasRows)
-                        {
-                            return false;
-                        }
-
-                        while (rs.Read())
-                        {
-                            string linhaPAC1 = "BBT" + rs["PAC"] + "," + rs["CoordPAC1_x"] + "," + rs["CoordPAC1_y"] + Environment.NewLine;
-
-                            _arqCoord.Append(linhaPAC1);
-                        }
-                    }
-
-                }
-
-                //fecha conexao
-                conn.Close();
             }
             return true;
         }

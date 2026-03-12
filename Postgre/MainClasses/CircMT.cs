@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
+using System.Drawing;
+using System.Globalization;
 using Npgsql;
 
 namespace ExportadorGeoPerdasDSS
@@ -251,13 +253,130 @@ namespace ExportadorGeoPerdasDSS
                 linha += Environment.NewLine + Environment.NewLine + "! BusCoords " + GetNomeArqCoord() + Environment.NewLine;
             }
 
-            linha += "ClearBusMarkers" + Environment.NewLine +
-            "! AddBusMarker Bus= ,code=12,color=Green,size=5 ! substation" + Environment.NewLine +
-            "! AddBusMarker bus= ,code=27,color=Green,size=3 ! NC switch in Green" + Environment.NewLine +
-            "! AddBusMarker bus= ,code=27,color=Yellow,size=3 ! Yellow circle = NO switch to be closed" + Environment.NewLine +
-            "! plot circuit quantity=power,dots=n,labels=n,subs=y,showloops=n,C1=Blue,C2=Blue,C3=Red,R2=0.95,R3=0.90";
+            linha += CriaBusMarkers();
             return linha;
         }
+        
+
+        private List<string> get_PAC_BRTs()
+        {
+            List<string> lstPAC = new List<string>();
+
+            using (NpgsqlConnection conn = new NpgsqlConnection(_connBuilder.ToString()))
+            {
+                conn.Open();
+
+                using (NpgsqlCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = "select CodPonAcopl1 from " + _par._DBschema + "StoredReguladorMT ";
+
+                    // se modo reconfiguracao 
+                    if (_modoReconf)
+                    {
+                        command.CommandText += "where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
+                        command.Parameters.AddWithValue("@codbase", _par._codBase);
+                    }
+                    else
+                    {
+                        command.CommandText += "where CodBase=@codbase and CodAlim=@CodAlim";
+                        command.Parameters.AddWithValue("@codbase", _par._codBase);
+                        command.Parameters.AddWithValue("@CodAlim", _par._alim);
+                    }
+
+                    using (var rs = command.ExecuteReader())
+                    {
+                        // verifica se NAO tem linhas
+                        if (!rs.HasRows)
+                        {
+                            return lstPAC;
+                        }
+
+                        while (rs.Read())
+                        {
+                            lstPAC.Add(rs["CodPonAcopl1"].ToString());
+                        }
+
+                    }
+                }
+            }
+            return lstPAC;
+        }
+
+
+        private List<string> get_PAC_UGMTs()
+        {
+            List<string> lstPAC = new List<string>();
+
+            using (NpgsqlConnection conn = new NpgsqlConnection(_connBuilder.ToString()))
+            {
+                conn.Open();
+
+                using (NpgsqlCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = "select CodPonAcopl from " + _par._DBschema + "StoredGeradorMT ";
+
+                    // se modo reconfiguracao 
+                    if (_modoReconf)
+                    {
+                        command.CommandText += "where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
+                        command.Parameters.AddWithValue("@codbase", _par._codBase);
+                    }
+                    else
+                    {
+                        command.CommandText += "where CodBase=@codbase and CodAlim=@CodAlim";
+                        command.Parameters.AddWithValue("@codbase", _par._codBase);
+                        command.Parameters.AddWithValue("@CodAlim", _par._alim);
+                    }
+
+                    using (var rs = command.ExecuteReader())
+                    {
+                        // verifica se NAO tem linhas
+                        if (!rs.HasRows)
+                        {
+                            return lstPAC;
+                        }
+
+                        while (rs.Read())
+                        {
+                            lstPAC.Add(rs["CodPonAcopl"].ToString());
+                        }
+
+                    }
+                }
+            }
+            return lstPAC;
+        }
+
+
+        private string CriaBusMarkers()
+        { 
+            string _BusMarkersStr = "ClearBusMarkers" + Environment.NewLine;
+
+
+            string se = "";
+            _BusMarkersStr += $"! AddBusMarker Bus={se} code=12 color=Green size=5 !substation" + Environment.NewLine;
+
+            List<string> lstPAC = get_PAC_UGMTs();
+
+            // GDMT
+            foreach (string pac in lstPAC ) 
+            {
+                _BusMarkersStr += $"! AddBusMarker Bus={pac} code=12 color=Green size=2 !GDMT" + Environment.NewLine;
+            }
+
+            lstPAC = get_PAC_BRTs();
+
+            // BRT
+            foreach (string brt in lstPAC )
+            {
+                _BusMarkersStr += $"! AddBusMarker Bus={brt} code=35 color=Red size=2! BRT" + Environment.NewLine ;
+            }
+
+            _BusMarkersStr += "! plot circuit quantity=power dots=n labels=n subs=y showloops=n C1=Blue C2=Blue C3=Red R2=0.95 R3=0.90";
+
+            return _BusMarkersStr;        
+        }
+
 
         private string CriaStrCabecalhoCustomizacao()
         {
