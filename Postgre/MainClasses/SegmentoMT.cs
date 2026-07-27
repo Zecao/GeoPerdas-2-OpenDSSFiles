@@ -51,23 +51,23 @@ namespace ExportadorGeoPerdasDSS
 
             using (NpgsqlConnection conn = new NpgsqlConnection(_connBuilder.ToString()))
             {
-                // abre conexao 
+                
                 conn.Open();
 
                 // TODO CoordPAC1_x,CoordPAC1_y,CoordPAC2_x,CoordPAC2_y 
                 using (NpgsqlCommand command = conn.CreateCommand())
                 {
-                    command.CommandText = "select CodSegmMT,CodPonAcopl1,CodPonAcopl2,CodFas,CodCond,Comp_km"
-                    + " from " + _par._DBschema + "StoredSegmentoMT";
+                    command.CommandText = "SELECT CodSegmMT,CodPonAcopl1,CodPonAcopl2,CodFas,CodCond,Comp_km " +
+                        "FROM " + _par._DBschema + "StoredSegmentoMT ";
 
                     if (_modoReconf)
                     {
-                        command.CommandText += " where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
+                        command.CommandText += "WHERE CodBase=@codbase AND CodAlim in (" + _par._conjAlim + ")";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                     }
                     else
                     {
-                        command.CommandText += " where CodBase=@codbase and CodAlim=@CodAlim";
+                        command.CommandText += "WHERE CodBase=@codbase AND CodAlim=@CodAlim";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                         command.Parameters.AddWithValue("@CodAlim", _par._alim);
                     }
@@ -110,9 +110,6 @@ namespace ExportadorGeoPerdasDSS
                         }
                     }
                 }
-
-                //fecha conexao
-                conn.Close();
             }
             return true;
         }
@@ -130,14 +127,13 @@ namespace ExportadorGeoPerdasDSS
             }
         }
 
-
         public bool ConsultaBusCoord(bool _modoReconf)
         {
             _arqCoord = new StringBuilder();
 
             using (NpgsqlConnection conn = new NpgsqlConnection(_connBuilder.ToString()))
             {
-                // abre conexao 
+                
                 conn.Open();
 
                 using (NpgsqlCommand command = conn.CreateCommand())
@@ -146,16 +142,16 @@ namespace ExportadorGeoPerdasDSS
 
                     if (_modoReconf)
                     {   
-                        // TODO testar
-
-                        command.CommandText += "select PAC, longitude, latitude from " + _par._DBschema
-                            + "coord where CodAlim in (" + _par._conjAlim + ")";      
+                        command.CommandText += "SELECT PAC, longitude, latitude " +
+                            "FROM " + _par._DBschema + "ERA_Coord " +
+                            "WHERE CodAlim in (" + _par._conjAlim + ")";      
 
                     }
                     else
                     {
-                        command.CommandText += "select PAC, longitude, latitude from " + _par._DBschema
-                            + "coord where CodAlim=@CodAlim ";
+                        command.CommandText += "SELECT PAC, longitude, latitude " +
+                            "FROM " + _par._DBschema + "ERA_Coord " +
+                            "WHERE CodAlim=@CodAlim ";
 
                         command.Parameters.AddWithValue("@CodAlim", _par._alim);
                     }
@@ -217,13 +213,14 @@ namespace ExportadorGeoPerdasDSS
 
             using (NpgsqlConnection conn = new NpgsqlConnection(_connBuilder.ToString()))
             {
-                // abre conexao 
+                
                 conn.Open();
 
                 using (NpgsqlCommand command = conn.CreateCommand())
                 {
-                    command.CommandText = "select CodAlim,CodPonAcopl from " + _par._DBschema + "Storedcircmt where codbase = @codbase "
-                                        + "and codalim in (" + _par._conjAlim + ")";
+                    command.CommandText = "SELECT CodAlim,CodPonAcopl FROM " + _par._DBschema + "Storedcircmt " +
+                        "WHERE codbase = @codbase AND codalim in (" + _par._conjAlim + ")";
+
                     command.Parameters.AddWithValue("@codbase", _par._codBase);
 
                     using (var rs = command.ExecuteReader())
@@ -241,9 +238,6 @@ namespace ExportadorGeoPerdasDSS
                         }
                     }
                 }
-
-                //fecha conexao
-                conn.Close();
             }
 
             string linha = "";

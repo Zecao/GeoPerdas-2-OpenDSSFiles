@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data.SqlClient;
-using System.Drawing;
-using System.Globalization;
-using Npgsql;
+﻿using Npgsql;
 
 namespace ExportadorGeoPerdasDSS
 {
@@ -44,52 +39,24 @@ namespace ExportadorGeoPerdasDSS
             return _par._alim + _coordMT;
         }
 
-        /* // estrutura tipica do arquivo masterDSS criado
-        clear
 
-        new circuit.alimAFNU16 bus1=155673172,basekv=13.8,pu=1.036
-
-        ! Arquivo de curvas de carga normalizadas
-        Redirect "..\PermRes\NovasCurvasTxt\CurvasDeCargaDU.dss"
-
-        ! Arquivo de condutores
-        Redirect "..\PermRes\Condutores.dss"
-
-        Redirect AFNU16Transformadores.dss
-        Redirect AFNU16Ramais.dss
-        Redirect AFNU16ChavesMT.dss
-        Redirect AFNU16SegmentosBT.dss
-        Redirect AFNU16SegmentosMT.dss
-        Redirect AFNU16Carga_BT.dss
-        Redirect AFNU16Carga_MT.dss
-
-        new energymeter.carga element=line.TR12301107,terminal=1
-
-        ! Seta as tensoes de base do sistema
-        Set voltagebases="13.8 0.24 0.22"
-
-        ! Calcula as tensoes das linhas em pu
-        CalcVoltageBases
-
-        !Set mode=daily  hour=0 number=24 stepsize=1h
-
-        Solve mode=daily  hour=0 number=24 stepsize=1h
-        */
         public void ConsultaStoredCircMT()
         {
             // Obtem PAC inicio alim, tensoes base, operacao e trecho p/ alocar Energymeter
             Get_PAC_CTMT();
 
             // cria String MasterDSS Parte A
-            _stringMasterDSS_A = CriaStringMasterDSS_ParteA(); 
+            _stringMasterDSS_A = CriaStringMasterDSS_ParteA();
 
-            // cria String MasterDSS Parte B
-            _stringMasterDSS_B = CriaStringMasterDSS_ParteB();
+            string sMasterDSS_B2 = CriaStringMasterDSS_ParteB_GUI();
 
             // OBS: As partes A e B são adicionadas e posteriormente gravadas e um único arquivo 
             // com a seguinte nomenclaura XXXAnualA.dss, onde XXX eh o nome do alimentador
             // OBS: A parte B eh gravada com o nome XXXAnualB eh utilizada pela customização "ExecutorOpenDSS"
-            _stringMasterDSS_A += _stringMasterDSS_B;
+            _stringMasterDSS_A += sMasterDSS_B2;
+
+            // cria String MasterDSS Parte B
+            _stringMasterDSS_B = CriaStringMasterDSS_ParteB();
 
             // cria string arquivo MasterDSS que sera utilizada pela customizacao "ExecutorOpenDSS"
             // com a seguinte nomenclaura XXX.dss, onde XXX eh o nome do alimentador
@@ -108,24 +75,24 @@ namespace ExportadorGeoPerdasDSS
                 using (NpgsqlCommand command = conn.CreateCommand())
                 {
                     //Verifica se há mais de 1 trecho saindo do PelPrincipal
-                    command.CommandText = "select t.CodBase,t.CodAlim,t.CodPonAcopl,t.TenNom_kV,t.TenOpe_pu,t.CodSegmMT," +
-                        "t.CodPonAcopl1,t.CodPonAcopl2,count(t.CodSegmMT) over() as rowCount " +
-                        "from ( select ct.CodBase,ct.CodAlim,CodPonAcopl,TenNom_kV,TenOpe_pu,CodSegmMT,CodPonAcopl1,CodPonAcopl2 from " +
-                        _par._DBschema + "StoredCircmt as ct " +
-                        "inner join " + _par._DBschema + "StoredSegmentoMT as seg on seg.CodPonAcopl1 = ct.CodPonAcopl " +
-                        "UNION select ct.CodBase,ct.CodAlim,CodPonAcopl,TenNom_kV,TenOpe_pu,CodSegmMT,CodPonAcopl1,CodPonAcopl2 from " +
-                        _par._DBschema + "StoredCircmt as ct " +
-                        "inner join " + _par._DBschema + "StoredSegmentoMT as seg on seg.CodPonAcopl2 = ct.CodPonAcopl ) as t ";
+                    command.CommandText = "SELECT t.CodBase,t.CodAlim,t.CodPonAcopl,t.TenNom_kV,t.TenOpe_pu,t.CodSegmMT," +
+                        "t.CodPonAcopl1,t.CodPonAcopl2,count(t.CodSegmMT) over() AS rowCount " +
+                        "FROM ( SELECT ct.CodBase,ct.CodAlim,CodPonAcopl,TenNom_kV,TenOpe_pu,CodSegmMT,CodPonAcopl1,CodPonAcopl2 " +
+                        "FROM " + _par._DBschema + "StoredCircmt AS ct " +
+                        "INNER JOIN " + _par._DBschema + "StoredSegmentoMT AS seg ON seg.CodPonAcopl1 = ct.CodPonAcopl " +
+                        "UNION SELECT ct.CodBase,ct.CodAlim,CodPonAcopl,TenNom_kV,TenOpe_pu,CodSegmMT,CodPonAcopl1,CodPonAcopl2 " +
+                        "FROM " + _par._DBschema + "StoredCircmt AS ct " +
+                        "INNER JOIN " + _par._DBschema + "StoredSegmentoMT AS seg ON seg.CodPonAcopl2 = ct.CodPonAcopl ) AS t ";
 
                     // se modo reconfiguracao 
                     if (_modoReconf)
                     {
-                        command.CommandText += "where t.CodBase=@codbase and t.CodAlim in (" + _par._conjAlim + ")";
+                        command.CommandText += "WHERE t.CodBase=@codbase AND t.CodAlim in (" + _par._conjAlim + ")";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                     }
                     else
                     {
-                        command.CommandText += "where t.CodBase=@codbase and t.CodAlim=@CodAlim";
+                        command.CommandText += "WHERE t.CodBase=@codbase AND t.CodAlim=@CodAlim";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                         command.Parameters.AddWithValue("@CodAlim", _par._alim);
                     }
@@ -198,13 +165,49 @@ namespace ExportadorGeoPerdasDSS
                             }
 
                             // cria linha de alocacao Energymeter //OBS: necessario adicionar prefixo "_SMT"
-                            _linhaEM += "new energymeter.carga element=line." + "SMT_" + trechEM + "," + terminal + Environment.NewLine;                            
+                            _linhaEM += Environment.NewLine + "new energymeter.carga element=line." + "SMT_" + trechEM + "," + terminal + Environment.NewLine;                            
                         }
                     }
                 }
-
-                conn.Close();
             }
+        }
+
+        // Cria Str Energymeter e comandos adicionais
+        private string CriaStringMasterDSS_ParteB_GUI()
+        {
+            string linha = "";
+
+            //ENERGYMETER
+            linha = _linhaEM;
+
+            // voltage bases // TODO
+            if (_par._dist.Equals("44"))
+            {
+                linha += Environment.NewLine + "Set voltagebases=[" + _TenNom_kV + " 0.38 0.44]" + Environment.NewLine;
+            }
+            else // TODO padrao tensao Cemig
+            {
+                linha += Environment.NewLine + "Set voltagebases=[" + _TenNom_kV + " 0.24 0.22]" + Environment.NewLine;
+            }
+
+            // CalcVoltageBases
+            linha += "CalcVoltageBases" + Environment.NewLine;
+
+            // Aumento do numero de iteracoes OpenDSS
+            linha += "Set MaxIter = 50" + Environment.NewLine;
+            linha += "Set MaxControlIter = 50" + Environment.NewLine;
+
+            // 
+            linha += Environment.NewLine + "Solve mode=daily,hour=0,number=24,stepsize=1h" + Environment.NewLine;
+
+            if (_criaArqCoordenadas)
+            {
+                // Linhas de coordenadas
+                linha += Environment.NewLine + Environment.NewLine + "BusCoords " + GetNomeArqCoord() + Environment.NewLine;
+            }
+
+            linha += CriaBusMarkers();
+            return linha;
         }
 
         // Cria Str Energymeter e comandos adicionais
@@ -214,18 +217,6 @@ namespace ExportadorGeoPerdasDSS
 
             //ENERGYMETER
             linha = _linhaEM;
-
-            // OLD CODE DEL
-            /*
-            if (_modoReconf)
-            {
-                // OBS: aloca medidor no terminal 2
-                linha = Environment.NewLine + "new energymeter.carga element=line." + "SMT_"+ _par._trEM + ",terminal=1" + Environment.NewLine;
-            }
-            else
-            {
-                linha = _linhaEM;
-            }*/
 
             // voltage bases // TODO
             if (_par._dist.Equals("44"))
@@ -268,17 +259,17 @@ namespace ExportadorGeoPerdasDSS
 
                 using (NpgsqlCommand command = conn.CreateCommand())
                 {
-                    command.CommandText = "select CodPonAcopl1 from " + _par._DBschema + "StoredReguladorMT ";
+                    command.CommandText = "SELECT CodPonAcopl1 FROM " + _par._DBschema + "StoredReguladorMT ";
 
                     // se modo reconfiguracao 
                     if (_modoReconf)
                     {
-                        command.CommandText += "where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
+                        command.CommandText += "WHERE CodBase=@codbase AND CodAlim in (" + _par._conjAlim + ")";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                     }
                     else
                     {
-                        command.CommandText += "where CodBase=@codbase and CodAlim=@CodAlim";
+                        command.CommandText += "WHERE CodBase=@codbase AND CodAlim=@CodAlim";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                         command.Parameters.AddWithValue("@CodAlim", _par._alim);
                     }
@@ -313,17 +304,18 @@ namespace ExportadorGeoPerdasDSS
 
                 using (NpgsqlCommand command = conn.CreateCommand())
                 {
-                    command.CommandText = "select CodPonAcopl from " + _par._DBschema + "StoredGeradorMT ";
+                    command.CommandText = "SELECT CodPonAcopl " +
+                        "FROM " + _par._DBschema + "StoredGeradorMT ";
 
                     // se modo reconfiguracao 
                     if (_modoReconf)
                     {
-                        command.CommandText += "where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
+                        command.CommandText += "WHERE CodBase=@codbase AND CodAlim in (" + _par._conjAlim + ")";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                     }
                     else
                     {
-                        command.CommandText += "where CodBase=@codbase and CodAlim=@CodAlim";
+                        command.CommandText += "WHERE CodBase=@codbase AND CodAlim=@CodAlim";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                         command.Parameters.AddWithValue("@CodAlim", _par._alim);
                     }
@@ -349,19 +341,20 @@ namespace ExportadorGeoPerdasDSS
 
 
         private string CriaBusMarkers()
-        { 
-            string _BusMarkersStr = "ClearBusMarkers" + Environment.NewLine;
-
-
+        {
             string se = "";
-            _BusMarkersStr += $"! AddBusMarker Bus={se} code=12 color=Green size=5 !substation" + Environment.NewLine;
+            string busMarkersStr = "!ClearBusMarkers" + Environment.NewLine;
 
+            busMarkersStr += $"!AddBusMarker Bus={se} code=12 color=Green size=5 !substation" + Environment.NewLine;
+
+            busMarkersStr += "!AddBusMarker Bus= code=12 color=Red size=1 !cargaMT" + Environment.NewLine;
+            
             List<string> lstPAC = get_PAC_UGMTs();
 
             // GDMT
             foreach (string pac in lstPAC ) 
             {
-                _BusMarkersStr += $"! AddBusMarker Bus={pac} code=12 color=Green size=2 !GDMT" + Environment.NewLine;
+                busMarkersStr += $"!AddBusMarker Bus={pac} code=12 color=Green size=2 !GDMT" + Environment.NewLine;
             }
 
             lstPAC = get_PAC_BRTs();
@@ -369,12 +362,12 @@ namespace ExportadorGeoPerdasDSS
             // BRT
             foreach (string brt in lstPAC )
             {
-                _BusMarkersStr += $"! AddBusMarker Bus={brt} code=35 color=Red size=2! BRT" + Environment.NewLine ;
+                busMarkersStr += $"!AddBusMarker Bus={brt} code=35 color=Red size=2! BRT" + Environment.NewLine ;
             }
 
-            _BusMarkersStr += "! plot circuit quantity=power dots=n labels=n subs=y showloops=n C1=Blue C2=Blue C3=Red R2=0.95 R3=0.90";
+            busMarkersStr += "!plot circuit quantity=power dots=n labels=n subs=y showloops=n C1=Blue C2=Blue C3=Red R2=0.95 R3=0.90" + Environment.NewLine;
 
-            return _BusMarkersStr;        
+            return busMarkersStr;        
         }
 
 

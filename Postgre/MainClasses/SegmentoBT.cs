@@ -1,6 +1,4 @@
-﻿using System;
-using System.Data.SqlClient;
-using System.Text;
+﻿using System.Text;
 using Npgsql;
 
 namespace ExportadorGeoPerdasDSS
@@ -28,7 +26,7 @@ namespace ExportadorGeoPerdasDSS
 
             using (NpgsqlConnection conn = new NpgsqlConnection(_connBuilder.ToString()))
             {
-                // abre conexao 
+                
                 conn.Open();
 
                 using (NpgsqlCommand command = conn.CreateCommand())
@@ -36,16 +34,16 @@ namespace ExportadorGeoPerdasDSS
                     // se modo reconfiguracao 
                     if (_modoReconf)
                     {
-                        command.CommandText = "select CodSegmBT,CodPonAcopl1,CodPonAcopl2,CodFas,CodCond,Comp_km" //,CoordPAC1_x,CoordPAC1_y,CoordPAC2_x,CoordPAC2_y
-                            + " from " + _par._DBschema + "StoredSegmentoBT "
-                            + "where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
+                        command.CommandText = "SELECT CodSegmBT,CodPonAcopl1,CodPonAcopl2,CodFas,CodCond,Comp_km " + //,CoordPAC1_x,CoordPAC1_y,CoordPAC2_x,CoordPAC2_y
+                            "FROM " + _par._DBschema + "StoredSegmentoBT " +
+                            "WHERE CodBase=@codbase AND CodAlim in (" + _par._conjAlim + ")";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                     }
                     else
                     {
-                        command.CommandText = "select CodSegmBT,CodPonAcopl1,CodPonAcopl2,CodFas,CodCond,Comp_km" //,CoordPAC1_x,CoordPAC1_y,CoordPAC2_x,CoordPAC2_y
-                            + " from " + _par._DBschema + "StoredSegmentoBT "
-                            + "where CodBase=@codbase and CodAlim=@CodAlim";
+                        command.CommandText = "SELECT CodSegmBT,CodPonAcopl1,CodPonAcopl2,CodFas,CodCond,Comp_km " + //,CoordPAC1_x,CoordPAC1_y,CoordPAC2_x,CoordPAC2_y
+                            "FROM " + _par._DBschema + "StoredSegmentoBT " +
+                            "WHERE CodBase=@codbase AND CodAlim=@CodAlim";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                         command.Parameters.AddWithValue("@CodAlim", _par._alim);
                     }
@@ -117,9 +115,6 @@ namespace ExportadorGeoPerdasDSS
                         }
                     }
                 }
-
-                //fecha conexao
-                conn.Close();
             }
             return true;
         }

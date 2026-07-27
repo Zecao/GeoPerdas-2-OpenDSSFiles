@@ -1,7 +1,4 @@
 ﻿using Npgsql;
-using OfficeOpenXml.FormulaParsing.Excel.Functions.Logical;
-using System;
-using System.Data.SqlClient;
 using System.Text;
 
 namespace ExportadorGeoPerdasDSS
@@ -28,7 +25,7 @@ namespace ExportadorGeoPerdasDSS
 
             using (NpgsqlConnection conn = new NpgsqlConnection(_connBuilder.ToString()))
             {
-                // abre conexao 
+                
                 conn.Open();
 
                 using (NpgsqlCommand command = conn.CreateCommand())
@@ -36,14 +33,16 @@ namespace ExportadorGeoPerdasDSS
                     // se modo reconfiguracao 
                     if (_modoReconf)
                     {
-                        command.CommandText = "select CodCapMT,CodPonAcopl,CodFas,PotNom_KVAr,kvnom " +
-                            "from " + _par._DBschema + "StoredCapacitorMT where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
+                        command.CommandText = "SELECT CodCapMT,CodPonAcopl,CodFas,PotNom_KVAr,kvnom " +
+                            "FROM " + _par._DBschema + "ERA_Capacitor " +
+                            "WHERE CodBase=@codbase AND CodAlim in (" + _par._conjAlim + ")";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                     }
                     else
                     {
-                        command.CommandText = "select CodCapMT,CodPonAcopl,CodFas,PotNom_KVAr,kvnom " +
-                            "from " + _par._DBschema + "StoredCapacitorMT where CodBase=@codbase and CodAlim=@CodAlim";
+                        command.CommandText = "SELECT CodCapMT,CodPonAcopl,CodFas,PotNom_KVAr,kvnom " +
+                            "FROM " + _par._DBschema + "ERA_Capacitor " +
+                            "WHERE CodBase=@codbase AND CodAlim=@CodAlim";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                         command.Parameters.AddWithValue("@CodAlim", _par._alim);
                     }
@@ -107,9 +106,6 @@ namespace ExportadorGeoPerdasDSS
                         }
                     }
                 }
-
-                //fecha conexao
-                conn.Close();
             }
             return true;
         }

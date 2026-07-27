@@ -1,11 +1,6 @@
 ﻿using ExportadorGeoPerdasDSS;
 using Npgsql;
-using System;
-using System.Collections.Generic;
-using System.Data.SqlClient;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace ConsoleApplication2.MainClasses
 {
@@ -30,14 +25,15 @@ namespace ConsoleApplication2.MainClasses
 
             using (NpgsqlConnection conn = new NpgsqlConnection(_connBuilder.ToString()))
             {
-                // abre conexao 
+                
                 conn.Open();
 
                 using (NpgsqlCommand command = conn.CreateCommand())
                 {
                     // 
-                    command.CommandText = "select CodCond,Resis_ohms_km,Reat_ohms_km,CorrMax_A " +
-                        "from " + _par._DBschema + "StoredCodCondutor where CodBase=@codbase ";
+                    command.CommandText = "SELECT CodCond,Resis_ohms_km,Reat_ohms_km,CorrMax_A " +
+                        "FROM " + _par._DBschema + "StoredCodCondutor " +
+                        "WHERE CodBase=@codbase ";
 
                     command.Parameters.AddWithValue("@codbase", _par._codBase);
 
@@ -67,9 +63,6 @@ namespace ConsoleApplication2.MainClasses
                         }
                     }
                 }
-
-                //fecha conexao
-                conn.Close();
             }
             return true;
         }

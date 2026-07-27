@@ -10,7 +10,7 @@ namespace ExportadorGeoPerdasDSS
         // membros privados
         private static readonly string _trafos = "Transformadores.dss";
         private static NpgsqlConnectionStringBuilder _connBuilder;
-        private StringBuilder _arqTrafo;
+        private StringBuilder _arqTrafo = new StringBuilder();
         private readonly Param _par;
         private readonly ModeloSDEE _SDEE;
 
@@ -30,24 +30,24 @@ namespace ExportadorGeoPerdasDSS
 
             using (NpgsqlConnection conn = new NpgsqlConnection(_connBuilder.ToString()))
             {
-                // abre conexao 
+                
                 conn.Open();
 
                 using (NpgsqlCommand command = conn.CreateCommand())
                 {
-                    command.CommandText = "select Propr,CodTrafo,CodPonAcopl1,CodPonAcopl2,PotNom_kVA,TipTrafo,CodFasPrim,CodFasSecu,CodFasTerc,TenSecu_kV,"
-                        + "Tap_pu,\"Resis_%\",\"ReatHL_%\",\"ReatHT_%\",\"ReatLT_%\",\"PerdVz_%\",TnsLnh1_kV,CodBnc,Descr"
-                        + " from " + _par._DBschema + "StoredTrafoMTMTMTBT ";
+                    command.CommandText = "SELECT Propr,CodTrafo,CodPonAcopl1,CodPonAcopl2,PotNom_kVA,TipTrafo,CodFasPrim,CodFasSecu,CodFasTerc,TenSecu_kV, " +
+                        "Tap_pu,\"Resis_%\",\"ReatHL_%\",\"ReatHT_%\",\"ReatLT_%\",\"PerdVz_%\",TnsLnh1_kV,CodBnc,Descr " +
+                        "FROM " + _par._DBschema + "StoredTrafoMTMTMTBT ";
 
                     // se modo reconfiguracao 
                     if (_modoReconf)
                     {
-                        command.CommandText += "where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
+                        command.CommandText += "WHERE CodBase=@codbase AND CodAlim in (" + _par._conjAlim + ")";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                     }
                     else
                     {
-                        command.CommandText += "where CodBase=@codbase and CodAlim=@CodAlim";
+                        command.CommandText += "WHERE CodBase=@codbase AND CodAlim=@CodAlim";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                         command.Parameters.AddWithValue("@CodAlim", _par._alim);
                     }
@@ -129,9 +129,6 @@ namespace ExportadorGeoPerdasDSS
                         }
                     }
                 }
-
-                //fecha conexao
-                conn.Close();
             }
             return true;
         }
@@ -231,6 +228,9 @@ new transformer.873969PT_1 Phases=1,Windings=2,Buses=[174122333.1.2 174122332.1.
         // cria string trafo monofasico tap central
         private string CriaStringTrafoMonofasico_3fios(NpgsqlDataReader rs, string faseDSS, string barraBT, string tensaoFN, string pot, string descr, string tensaoFFsec)
         {
+            double tensaoFFsec_d = double.Parse(tensaoFFsec);
+            tensaoFFsec_d = tensaoFFsec_d / 2;
+
             string linha;
             if (!_par._modelo4condutores)
             {
@@ -240,7 +240,7 @@ new transformer.873969PT_1 Phases=1,Windings=2,Buses=[174122333.1.2 174122332.1.
                     + ",Buses=[" + rs["CodPonAcopl1"].ToString() + faseDSS //OBS1
                     + " " + barraBT + ".1.0 " + barraBT + ".0.2]"  //OBS1 + "BBT" //OBS: atenção para a polaridade .0.2
                     + ",Conns=[wye wye wye]"
-                    + ",kvs=[" + tensaoFN + " " + tensaoFFsec + " " + tensaoFFsec + "]"
+                    + ",kvs=[" + tensaoFN + " " + tensaoFFsec_d.ToString() + " " + tensaoFFsec_d.ToString() + "]"
                     + ",kvas=[" + pot + " " + pot + " " + pot + "]"
                     + ",Taps=[1," + rs["Tap_pu"].ToString() + "," + rs["Tap_pu"].ToString() + "]";
 

@@ -1,7 +1,4 @@
 ﻿using Npgsql;
-using OfficeOpenXml.FormulaParsing.Excel.Functions;
-using System;
-using System.Data.SqlClient;
 using System.Text;
 
 namespace ExportadorGeoPerdasDSS
@@ -35,7 +32,7 @@ namespace ExportadorGeoPerdasDSS
 
             using (NpgsqlConnection conn = new NpgsqlConnection(_connBuilder.ToString()))
             {
-                // abre conexao 
+                
                 conn.Open();
 
                 using (NpgsqlCommand command = conn.CreateCommand())
@@ -43,15 +40,18 @@ namespace ExportadorGeoPerdasDSS
                     // se modo reconfiguracao 
                     if (_modoReconf)
                     {
-                        command.CommandText = "select CodRegulMT,TnsLnh1_kV,CodFasPrim,CodPonAcopl1,CodPonAcopl2,PotNom_kVA,\"ReatHL_%\","
-                            + "[Resis_%],PerdVz_W,TenRgl_pu,CodBnc,TipRegul,Descr from " + _par._DBschema + "StoredReguladorMT "
-                            + "where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
+                        command.CommandText = "SELECT CodRegulMT,TnsLnh1_kV,CodFasPrim,CodPonAcopl1,CodPonAcopl2,PotNom_kVA,\"ReatHL_%\"," +
+                            "\"Resis_%\",PerdVz_W,TenRgl_pu,CodBnc,TipRegul,Descr " +
+                            "FROM " + _par._DBschema + "StoredReguladorMT " +
+                            "WHERE CodBase=@codbase AND CodAlim in (" + _par._conjAlim + ")";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                     }
                     else
                     {
-                        command.CommandText = "select CodRegulMT,TnsLnh1_kV,CodFasPrim,CodPonAcopl1,CodPonAcopl2,PotNom_kVA,\"ReatHL_%\",\"Resis_%\",PerdVz_W,TenRgl_pu,CodBnc,TipRegul,Descr from " +
-                            _par._DBschema + "StoredReguladorMT where CodBase=@codbase and CodAlim=@CodAlim";
+                        command.CommandText = "SELECT CodRegulMT,TnsLnh1_kV,CodFasPrim,CodPonAcopl1,CodPonAcopl2,PotNom_kVA,\"ReatHL_%\"," +
+                            "\"Resis_%\",PerdVz_W,TenRgl_pu,CodBnc,TipRegul,Descr " +
+                            "FROM " + _par._DBschema + "StoredReguladorMT " +
+                            "WHERE CodBase=@codbase AND CodAlim=@CodAlim";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                         command.Parameters.AddWithValue("@CodAlim", _alim);
                     }
@@ -179,9 +179,6 @@ namespace ExportadorGeoPerdasDSS
                         }
                     }
                 }
-
-                //fecha conexao
-                conn.Close();
             }
             return true;
         }

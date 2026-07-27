@@ -1,8 +1,5 @@
-﻿using System;
-using System.Data.SqlClient;
+﻿using Npgsql;
 using System.Text;
-using Npgsql;
-using OfficeOpenXml.FormulaParsing.Excel.Functions.Text;
 
 namespace ExportadorGeoPerdasDSS
 {
@@ -12,7 +9,7 @@ namespace ExportadorGeoPerdasDSS
         private static readonly string _geradorMT = "GeradorMT_";
         private static NpgsqlConnectionStringBuilder _connBuilder;
         private int _iMes;
-        private StringBuilder _arqGeradorMT;
+        private StringBuilder _arqGeradorMT = new StringBuilder();
         private readonly Param _par;
 
         public GeradorMT(NpgsqlConnectionStringBuilder connBuilder, Param par, int iMes)
@@ -30,26 +27,26 @@ namespace ExportadorGeoPerdasDSS
 
             using (var conn = new NpgsqlConnection(_connBuilder.ToString()))
             {
-                // abre conexao 
+                
                 conn.Open();
 
                 NpgsqlCommand command = conn.CreateCommand();
 
                 // TODO
-                command.CommandText = "select CodGeraMT,CodAlim,CodFas,CodPonAcopl,TnsLnh_kV," +
+                command.CommandText = "SELECT CodGeraMT,CodAlim,CodFas,CodPonAcopl,TnsLnh_kV," +
                     "EnerMedid01_MWh,EnerMedid02_MWh,EnerMedid03_MWh,EnerMedid04_MWh,EnerMedid05_MWh,EnerMedid06_MWh," +
-                    "EnerMedid07_MWh,EnerMedid08_MWh,EnerMedid09_MWh,EnerMedid10_MWh,EnerMedid11_MWh,EnerMedid12_MWh,Descr,TipGer "; 
+                    "EnerMedid07_MWh,EnerMedid08_MWh,EnerMedid09_MWh,EnerMedid10_MWh,EnerMedid11_MWh,EnerMedid12_MWh,Descr ";
 
                 // se modo reconfiguracao 
                 if (_modoReconf)
                 {
-                    command.CommandText += "from " + _par._DBschema + "StoredGeradorMT where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
+                    command.CommandText += "FROM " + _par._DBschema + "StoredGeradorMT where CodBase=@codbase AND CodAlim in (" + _par._conjAlim + ")";
                     command.Parameters.AddWithValue("@codbase", _par._codBase);
 
                 }
                 else
                 {
-                    command.CommandText += "from " + _par._DBschema + "StoredGeradorMT where CodBase=@codbase and CodAlim=@CodAlim";
+                    command.CommandText += "FROM " + _par._DBschema + "StoredGeradorMT where CodBase=@codbase AND CodAlim=@CodAlim";
                     command.Parameters.AddWithValue("@codbase", _par._codBase);
                     command.Parameters.AddWithValue("@CodAlim", _par._alim);
                 }
@@ -77,10 +74,15 @@ namespace ExportadorGeoPerdasDSS
                         if (double.Parse(injecaoMes_MWh) == 0.0)
                             continue;
 
-                        string tipGer = rs["TipGer"].ToString();
+                        // obtém tipo de gerador preferencialmente do dicionário carregado em GetTipoGer
+                        string tipGer = string.Empty;
+                        if (_par._dicTipGer != null && !string.IsNullOrEmpty(CodGeraMT) && _par._dicTipGer.TryGetValue(CodGeraMT, out var tg))
+                        {
+                            tipGer = tg;
+                        }
 
                         // flags if has any PVSystem
-                        if (tipGer.Equals("UFV") || tipGer.Equals("GD."))
+                        if (!string.IsNullOrEmpty(tipGer) && (tipGer.Contains("UFV") || tipGer.Contains("GD.")))
                         {
                             hasAnyPVSystem = true;
                         }
@@ -159,11 +161,6 @@ namespace ExportadorGeoPerdasDSS
                         _arqGeradorMT.Append(linha);
                     }
                 }
-
-
-                //fecha conexao
-                conn.Close();
-
             }
             return true;
         }

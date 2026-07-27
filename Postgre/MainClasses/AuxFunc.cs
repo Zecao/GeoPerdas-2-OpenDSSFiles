@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data.SqlClient;
-using System.IO;
-using System.Linq;
-using Npgsql;
+﻿using Npgsql;
 
 namespace ExportadorGeoPerdasDSS
 {
@@ -66,8 +61,19 @@ namespace ExportadorGeoPerdasDSS
 
         public static string CreateDERList_PVSystem(List<string> lst)
         {
-            string ret;
+            if (lst == null || lst.Count == 0) return string.Empty;
 
+            var sb = new System.Text.StringBuilder();
+            for (int i = 0; i < lst.Count; i++)
+            {
+                string elem = lst[i] ?? string.Empty;
+                if (i > 0) sb.Append(",PVSystem.");
+                sb.Append(elem);
+            }
+            return sb.ToString();
+            /*
+            string ret;
+            
             // inicializacao 
             ret = "PVSystem.";
 
@@ -86,7 +92,7 @@ namespace ExportadorGeoPerdasDSS
                     ret += ",PVSystem.";
                 }
             }
-            return ret;
+            return ret;*/
         }
 
         // retorna string de fases padrao OpenDSS de acordo com a fase 
@@ -157,52 +163,38 @@ namespace ExportadorGeoPerdasDSS
         // converte tensao fase-fase para fase-neutro
         public static string GetTensaoFN(string tensaoFF)
         {
-            //condicao de retorno
-            if (tensaoFF.Equals(""))
-            {
+            if (string.IsNullOrWhiteSpace(tensaoFF))
                 return "7.967";
-            }
 
-            double tensaoFF_d = double.Parse(tensaoFF);
+            if (!double.TryParse(tensaoFF, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double tensaoFF_d))
+                return "7.967";
 
-            //verifica se tensao eh igual a 34.5 ou 22.0kV
-            if (tensaoFF_d.Equals(34.5))
-            {
-                return "19.92";
-            }
-            if (tensaoFF_d.Equals(22.0))
-            {
-                return "12.70";
-            }
-            if (tensaoFF_d.Equals(13.2))
-            {
-                return "7.62";
-            }
-            if (tensaoFF_d.Equals(11.9))
-            {
-                return "6.87";
-            }
-            if (tensaoFF_d.Equals(11.4))
-            {
-                return "6.58";
-            }
-            return "7.967";
+            if (Math.Abs(tensaoFF_d - 34.5) < 1e-6) return "19.92";
+            if (Math.Abs(tensaoFF_d - 22.0) < 1e-6) return "12.70";
+            if (Math.Abs(tensaoFF_d - 13.2) < 1e-6) return "7.62";
+            if (Math.Abs(tensaoFF_d - 11.9) < 1e-6) return "6.87";
+            if (Math.Abs(tensaoFF_d - 11.4) < 1e-6) return "6.58";
+                
+  
+
+
         }
 
         // Returns k factor (transforms Energy into a power or demand value) 
         internal static string GetFatorK(string tipGer)
         {
-            if ( tipGer.Equals("UFV") || tipGer.Equals("GD.") )
+            if (string.IsNullOrEmpty(tipGer)) return "24";
+            if (tipGer.Contains("UFV") || tipGer.Contains("GD."))
                 return "7.16";
-            else 
-                return "24"; // hydraulic or powerplants 
+            return "24"; // hydraulic or powerplants 
         }
 
         internal static string GetLoadShape(string tipGer, string CodGeraMT)
         {
+            CodGeraMT ??= "0";
             string cab = "new loadshape.c" + CodGeraMT + " npts=24,interval=1.0,mult=";
 
-            if ( tipGer.Equals("UFV") || tipGer.Equals("GD.") )
+            if (!string.IsNullOrEmpty(tipGer) && (tipGer.Contains("UFV") || tipGer.Contains("GD.")))
             {
                 return cab + "[0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.17,0.47,0.7,0.9,1,1,0.93,0.8,0.53,0.33,0.2,0.13,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001]" + Environment.NewLine;
             }

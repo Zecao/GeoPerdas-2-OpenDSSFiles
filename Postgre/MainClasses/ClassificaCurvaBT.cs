@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data.SqlClient;
-using System.Text;
+﻿using System.Text;
 using Npgsql;
 
 namespace ExportadorGeoPerdasDSS
@@ -59,16 +56,18 @@ namespace ExportadorGeoPerdasDSS
 
             using (NpgsqlConnection conn = new NpgsqlConnection(_connBuilder.ToString()))
             {
-                // abre conexao 
+                
                 conn.Open();
 
                 using (NpgsqlCommand command = conn.CreateCommand())
                 {
                     // se modo reconfiguracao 
                     {
-                        command.CommandText = "select CodConsBT,TipCrvaCarga,(EnerMedid01_MWh + EnerMedid02_MWh + EnerMedid03_MWh + EnerMedid04_MWh + EnerMedid05_MWh + EnerMedid06_MWh +"
-                            + "EnerMedid07_MWh + EnerMedid08_MWh + EnerMedid09_MWh + EnerMedid10_MWh + EnerMedid11_MWh + EnerMedid12_MWh)*1000/12 as MediakWh from " +
-                            _par._DBschema + "StoredCargaBT " + "where CodBase=@codbase and TipCrvaCarga<>'IP' order by CodConsBT"; //OLD CODE and CodAlim=@CodAlim";
+                        command.CommandText = "SELECT CodConsBT,TipCrvaCarga,(EnerMedid01_MWh + EnerMedid02_MWh + EnerMedid03_MWh + EnerMedid04_MWh + EnerMedid05_MWh + EnerMedid06_MWh +" +
+                            "EnerMedid07_MWh + EnerMedid08_MWh + EnerMedid09_MWh + EnerMedid10_MWh + EnerMedid11_MWh + EnerMedid12_MWh)*1000/12 AS MediakWh " +
+                            "FROM " + _par._DBschema + "StoredCargaBT " + 
+                            "WHERE CodBase=@codbase AND TipCrvaCarga<>'IP' " +
+                            "ORDER BY CodConsBT"; //OLD CODE AND CodAlim=@CodAlim";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                         //command.Parameters.AddWithValue("@CodAlim", _par._alim);
                     }
@@ -206,9 +205,6 @@ namespace ExportadorGeoPerdasDSS
                         }
                     }
                 }
-
-                //fecha conexao
-                conn.Close();
             }
             return true;
         }

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Data.SqlClient;
-using System.Text;
+﻿using System.Text;
 using Npgsql;
 
 namespace ExportadorGeoPerdasDSS
@@ -43,24 +39,25 @@ namespace ExportadorGeoPerdasDSS
 
             using (NpgsqlConnection conn = new NpgsqlConnection(_connBuilder.ToString()))
             {
-                // abre conexao 
+                
                 conn.Open();
 
                 using (NpgsqlCommand command = conn.CreateCommand())
                 {
-                    string sql = "select TipTrafo,TenSecu_kV,CodConsBT,CodFas,CodPonAcopl,TipCrvaCarga,tnslnh_kv,tnsfas_kv,EnerMedid01_MWh,EnerMedid02_MWh,EnerMedid03_MWh,EnerMedid04_MWh,EnerMedid05_MWh,EnerMedid06_MWh,EnerMedid07_MWh," +
-                            "EnerMedid08_MWh,EnerMedid09_MWh,EnerMedid10_MWh,EnerMedid11_MWh,EnerMedid12_MWh from " +
-                            _par._DBschema + "StoredCargaBT as car inner join " + _par._DBschema + "StoredTrafoMTMTMTBT as tr on tr.CodTrafo = car.CodTrafo ";
+                    string sql = "SELECT TipTrafo,TenSecu_kV,CodConsBT,CodFas,CodPonAcopl,TipCrvaCarga,tnslnh_kv,tnsfas_kv,EnerMedid01_MWh,EnerMedid02_MWh,EnerMedid03_MWh,EnerMedid04_MWh,EnerMedid05_MWh,EnerMedid06_MWh,EnerMedid07_MWh," +
+                            "EnerMedid08_MWh,EnerMedid09_MWh,EnerMedid10_MWh,EnerMedid11_MWh,EnerMedid12_MWh " +
+                            "FROM " + _par._DBschema + "StoredCargaBT AS car " +
+                            "INNER JOIN " + _par._DBschema + "StoredTrafoMTMTMTBT AS tr ON tr.CodTrafo = car.CodTrafo ";
 
                     // se modo reconfiguracao 
                     if (_modoReconf)
                     {
-                        command.CommandText = sql + "where car.CodBase=@codbase and tr.CodBase=@codbase and car.CodAlim in (" + _par._conjAlim + ")";
+                        command.CommandText = sql + "WHERE car.CodBase=@codbase AND tr.CodBase=@codbase AND car.CodAlim in (" + _par._conjAlim + ")";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                     }
                     else
                     {
-                        command.CommandText = sql + "where car.CodBase=@codbase and tr.CodBase=@codbase and car.CodAlim=@CodAlim";
+                        command.CommandText = sql + "WHERE car.CodBase=@codbase AND tr.CodBase=@codbase AND car.CodAlim=@CodAlim";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                         command.Parameters.AddWithValue("@CodAlim", _par._alim);
                     }
@@ -79,9 +76,6 @@ namespace ExportadorGeoPerdasDSS
                         }
                     }
                 }
-
-                //fecha conexao
-                conn.Close();
             }
             return true;
         }
@@ -149,7 +143,8 @@ namespace ExportadorGeoPerdasDSS
 
         private string CriaDSSCargaPconstBT(NpgsqlDataReader rs, string demanda, string fases, string numFases, string Kv)
         {
-            string linha;
+            string linha="";
+            string codConsBT = rs["CodConsBT"].ToString();
 
             if (!_par._modelo4condutores)
             {

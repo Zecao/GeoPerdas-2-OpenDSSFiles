@@ -1,6 +1,4 @@
-﻿using System;
-using System.Data.SqlClient;
-using System.Text;
+﻿using System.Text;
 using Npgsql;
 
 namespace ExportadorGeoPerdasDSS
@@ -10,7 +8,7 @@ namespace ExportadorGeoPerdasDSS
         private static readonly string _geradorBT = "GeradorBT_";
         private static NpgsqlConnectionStringBuilder _connBuilder;
         private int _iMes;
-        private StringBuilder _arqGeradorBT;
+        private StringBuilder _arqGeradorBT = new StringBuilder();
         private readonly Param _par;
 
         public GeradorBT(NpgsqlConnectionStringBuilder connBuilder, Param par, int iMes)
@@ -26,26 +24,26 @@ namespace ExportadorGeoPerdasDSS
 
             using (NpgsqlConnection conn = new NpgsqlConnection(_connBuilder.ToString()))
             {
-                // abre conexao 
+                
                 conn.Open();
 
                 using (NpgsqlCommand command = conn.CreateCommand())
                 {
                     // 
-                    command.CommandText = "select CodGeraBT,CodAlim,CodFas,CodPonAcopl,TnsLnh_kV," +
+                    command.CommandText = "SELECT CodGeraBT,CodAlim,CodFas,CodPonAcopl,TnsLnh_kV," +
                         "EnerMedid01_MWh,EnerMedid02_MWh,EnerMedid03_MWh,EnerMedid04_MWh,EnerMedid05_MWh,EnerMedid06_MWh," +
-                        "EnerMedid07_MWh,EnerMedid08_MWh,EnerMedid09_MWh,EnerMedid10_MWh,EnerMedid11_MWh,EnerMedid12_MWh,Descr,TipGer ";
+                        "EnerMedid07_MWh,EnerMedid08_MWh,EnerMedid09_MWh,EnerMedid10_MWh,EnerMedid11_MWh,EnerMedid12_MWh,Descr ";
 
                     // se modo reconfiguracao 
                     if (_modoReconf)
                     {
-                        command.CommandText += "from " + _par._DBschema + "StoredGeradorBT where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
+                        command.CommandText += "FROM " + _par._DBschema + "StoredGeradorBT where CodBase=@codbase AND CodAlim in (" + _par._conjAlim + ")";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
 
                     }
                     else
                     {
-                        command.CommandText += "from " + _par._DBschema + "StoredGeradorBT where CodBase=@codbase and CodAlim=@CodAlim";
+                        command.CommandText += "FROM " + _par._DBschema + "StoredGeradorBT where CodBase=@codbase AND CodAlim=@CodAlim";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                         command.Parameters.AddWithValue("@CodAlim", _par._alim);
                     }
@@ -75,7 +73,6 @@ namespace ExportadorGeoPerdasDSS
                             if (double.Parse(injecaoMes_MWh) == 0.0)
                                 continue;
 
-                            string tipGer = rs["TipGer"].ToString();
                             string tensaoLinha = rs["TnsLnh_kV"].ToString(); // TODO corrigir
                             string codFas = rs["CodFas"].ToString();
 
@@ -85,6 +82,9 @@ namespace ExportadorGeoPerdasDSS
 
 
                             // Gets k factor (transforms Energy into a power or demand value) 
+                            //string tipGer = _par._dicTipGer[CodGeraBT];
+                            // TODO FIX ME
+                            string tipGer = "GD.";
                             string fatorKdiario = AuxFunc.GetFatorK(tipGer);
 
                             //Calculates mean Injected power
@@ -97,8 +97,8 @@ namespace ExportadorGeoPerdasDSS
                                 hasAnyPVSystem = true;
                             }
 
-                            // TODO caso queir aindividualizar curvas
-                            //defiir laodshape conforme tipo usina. 
+                            // TODO caso queira individualizar curvas
+                            //definir laodshape conforme tipo usina. 
                             // curva PU
                             //string linha = AuxFunc.GetLoadShape(tipGer,curvaUGBT);                                                         
                             string linha = "";
@@ -163,9 +163,6 @@ namespace ExportadorGeoPerdasDSS
                         }
                     }
                 }
-
-                //fecha conexao
-                conn.Close();
             }
             return true;
         }

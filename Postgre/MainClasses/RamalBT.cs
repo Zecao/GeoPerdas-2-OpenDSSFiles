@@ -1,6 +1,4 @@
-﻿using System;
-using System.Data.SqlClient;
-using System.Text;
+﻿using System.Text;
 using Npgsql;
 
 namespace ExportadorGeoPerdasDSS
@@ -30,7 +28,7 @@ namespace ExportadorGeoPerdasDSS
 
             using (NpgsqlConnection conn = new NpgsqlConnection(_connBuilder.ToString()))
             {
-                // abre conexao 
+                
                 conn.Open();
 
                 using (NpgsqlCommand command = conn.CreateCommand())
@@ -38,14 +36,16 @@ namespace ExportadorGeoPerdasDSS
                     // se modo reconfiguracao 
                     if (_modoReconf)
                     {
-                        command.CommandText = "select CodRmlBT,CodPonAcopl1,CodPonAcopl2,CodFas,CodCond,Comp_km,Descr from " + _par._DBschema + "StoredRamalBT "
-                            + "where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
+                        command.CommandText = "SELECT CodRmlBT,CodPonAcopl1,CodPonAcopl2,CodFas,CodCond,Comp_km,Descr " +
+                            "FROM " + _par._DBschema + "StoredRamalBT " +
+                            "WHERE CodBase=@codbase AND CodAlim in (" + _par._conjAlim + ")";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                     }
                     else
                     {
-                        command.CommandText = "select CodRmlBT,CodPonAcopl1,CodPonAcopl2,CodFas,CodCond,Comp_km,Descr from " + _par._DBschema + "StoredRamalBT "
-                            + "where CodBase=@codbase and CodAlim=@CodAlim";
+                        command.CommandText = "SELECT CodRmlBT,CodPonAcopl1,CodPonAcopl2,CodFas,CodCond,Comp_km,Descr " +
+                            "FROM " + _par._DBschema + "StoredRamalBT " +
+                            "WHERE CodBase=@codbase AND CodAlim=@CodAlim";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                         command.Parameters.AddWithValue("@CodAlim", _alim);
                     }
@@ -110,9 +110,6 @@ namespace ExportadorGeoPerdasDSS
                         }
                     }
                 }
-
-                //fecha conexao
-                conn.Close();
             }
             return true;
         }

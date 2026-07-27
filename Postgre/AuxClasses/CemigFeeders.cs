@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data.SqlClient;
-using System.IO;
-using System.Linq;
-using Npgsql;
-
+﻿
 namespace ExportadorGeoPerdasDSS
 {
     class CemigFeeders
@@ -96,92 +90,5 @@ namespace ExportadorGeoPerdasDSS
             }
 
         }
-
-        //Get all feeders in a string separated by ',' from a substation name
-        public static bool GetAllFeedersFromSubstationString(string sub, NpgsqlConnectionStringBuilder con, Param par)
-        {
-            // OBS: a SE deve ter nome
-            // obtem lstAlim da SE
-            List<string> lstAlim = GetLstAlimSE(sub, con, par);
-
-            if (lstAlim.Count == 0)
-            {
-                return false;
-            }
-            // cria string com a uniao dos alimentadores 
-            string lstAlimSE = UneStringAlim(lstAlim);
-
-            // adds lst feeders in _par object
-            par._conjAlim = lstAlimSE;
-
-            return true;
-        }
-
-        private static string UneStringAlim(List<string> lstAlim)
-        {
-            string conjAlims;
-
-            // inicializacao 
-            conjAlims = "'";
-
-            // para cada alimentador da lista
-            foreach (string alim in lstAlim)
-            {
-                conjAlims += alim;
-
-                if (string.Equals(alim, lstAlim.Last()))
-                {
-                    conjAlims += "'";
-                }
-                else
-                {
-                    conjAlims += "','";
-                }
-            }
-            return conjAlims;
-        }
-
-        private static List<string> GetLstAlimSE(string codSE, NpgsqlConnectionStringBuilder _connBuilder, Param par)
-        {
-            List<string> lstAlim = new List<string>();
-
-            NpgsqlConnectionStringBuilder conn_old = new NpgsqlConnectionStringBuilder(_connBuilder.ToString());
-
-            using (var conn = new NpgsqlConnection(_connBuilder.ToString()))
-            {
-
-                // abre conexao 
-                conn.Open();
-
-                //consulta a banco 
-                using (NpgsqlCommand command = conn.CreateCommand())
-                {
-                    command.CommandText = "select CodAlim from " + par._DBschema + "StoredCircMT "
-                        + "where CodBase=@codbase and CodSub='@codSe'";
-                    command.Parameters.AddWithValue("@codbase", par._codBase);
-                    command.Parameters.AddWithValue("@codSe", codSE);
-
-                    using (var rs = command.ExecuteReader())
-                    {
-                        // verifica ocorrencia de elemento no banco
-                        if (!rs.HasRows)
-                        {
-                            return lstAlim;
-                        }
-
-                        while (rs.Read())
-                        {
-                            lstAlim.Add(rs["CodAlim"].ToString());
-                        }
-                    }
-                }
-
-                //fecha conexao
-                conn.Close();
-            }
-
-            return lstAlim;
-        }
-
     }
 }

@@ -1,32 +1,27 @@
 ﻿using AuxClasses;
 using ExportadorGeoPerdasDSS;
 using Npgsql;
-using System;
-using System.Collections.Generic;
-using System.Data.SqlClient;
 
 namespace ExportadorArqDSS
 {
-    class GeoPerdas2DSSFiles
+    class GeoPerdas2DSSFiles_PG
     {
         // parametros banco de dados                                               
         public static string _dbms = "Postgre"; //"SQLServer" "Postgre"
         public static string _dataSource = "localhost"; // PostgreSQL 
-        public static string _banco = "GEO_SIGR_PERDAS_CEMIG_2024"; // servidor SGBD
+        public static string _banco = "C_2025"; // servidor SGBD
         public static string _schema = "GeoPerdas2023b."; // SQlServer: dbo. Postgre: GeoPerdas2023b.
 
         // path
-        //public static readonly string _path = @"D:\CopiaDropbox\0_BDGDs\_CPFL\_DSS_2025\";
-        //public static readonly string _path = @"D:\CopiaDropbox\0_BDGDs\2_Equatorial_MA\DSS\";
-        public static readonly string _path = @"D:\CopiaDropbox\0_ERA\2026\07_RTP_Cemig\1_alim2024\";
+        public static readonly string _path = @"C:\CopiaDropbox\0_ERA\2026\06_RTP_Cemig\1_alim2025\";
 
         // codbase
-        public static int _codBase = 2024124950; // CPFL:20231263 Cemig:2022124950 EquatorialMA:20241237 Energisa-MT: 202412405 MS:202312404
+        public static int _codBase = 2025124950; // CPFL:20231263 Cemig:2022124950 EquatorialMA:20241237 Energisa-MT: 202412405 MS:202312404
         public static string _dist = "4950"; //
 
         // mes e ano para a geracao dos arquivos de carga BT e MT
         public static int _iMes = 12;
-        public static string _ano = "2024"; //
+        public static string _ano = "2025"; //
 
         // 
         public static bool _criaTodosOsMeses = false;  // flag p/ criar todos os meses de carga MT BT e geradores
@@ -41,7 +36,7 @@ namespace ExportadorArqDSS
         _varFollowInvMV     -> Default: false (Have to set False to enable Inverter night mode)
         _voltVarcurve =     -> Default: "voltvar_c"
         */
-        public static readonly PVSystemPar _pvMV = new PVSystemPar(true, false); 
+        public static readonly PVSystemPar _pvMV = new PVSystemPar(false, false); 
         public static readonly PVSystemPar _pvLV = new PVSystemPar(false, false);
 
         // 
@@ -49,7 +44,7 @@ namespace ExportadorArqDSS
         public static bool _modelo4condutores = false; //modelo 4 condutor BT
 
         // cria arquivo DSS unificando alimentadores (e.g. estudos de reconfiguracao)
-        public static bool _genAllSubstation = false; // Generates all substation feeders as one. Uses the first feeder for directory name.
+        public static bool _genAllSubstation = true; // Generates all substation feeders as one. Uses the first feeder for directory name.
 
         // arquivo txt com lista de alimentadores
         public static string _arqLstAlimentadores = "lstAlimentadores.m";
@@ -71,8 +66,8 @@ namespace ExportadorArqDSS
         */
         
         // parametros CEMIG 
-        private readonly static ModeloSDEE _SDEE = new ModeloSDEE(usarCondutoresSeqZero: false, utilizarCurvaDeCargaClienteMTIndividual: false, incluirCapacitoresMT: false, modeloCarga: "PCONST",
-           reatanciaTrafos: true);        
+        private readonly static ModeloSDEE _SDEE = new ModeloSDEE(usarCondutoresSeqZero: false, utilizarCurvaDeCargaClienteMTIndividual: false, 
+            incluirCapacitoresMT: true, modeloCarga: "PCONST", reatanciaTrafos: true);        
         
         // FIM parametros configuraveis usuario
 
@@ -95,10 +90,12 @@ namespace ExportadorArqDSS
         // OLD CODE
         // arquivo do Excel com somatorio em PU das curvas de carga
         public static readonly string _arqConsumoMensalPU = "somaCurvasCargaPU.xlsx";
+
         // utilizado por CargaMT e CargaBT
         private static Dictionary<string, List<string>> _curvasTipicasClientesMT;
 
-        static void Main() //string[] args
+
+        static void Main()
         {
             System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
@@ -107,6 +104,7 @@ namespace ExportadorArqDSS
             _connBuilder.Database = _banco;
             _connBuilder.Username = "postgres";
             _connBuilder.Password = "educ1986";
+            _connBuilder.Port = 5433;
 
             // variaveis auxiliares
             CarregaVariaveisAux();
@@ -137,10 +135,9 @@ namespace ExportadorArqDSS
             // Create Condutores.dss file
             //Create_LineCodes_DSSFile();
 
-            // UNDER CONSTRUCTION
+            // TODO UNDER CONSTRUCTION
             // Create LoadShape .dss files
-            //Create_LoadShapes_DSSFile();            
-            
+            //Create_LoadShapes_DSSFile();           
             
             // Segmento MT
             CriaSegmentoMTDSS();
@@ -158,14 +155,14 @@ namespace ExportadorArqDSS
             CriaChaveMT();
             
             // Transformador MT
-            CriaTransformadorMTMTMTBTDSS();
+            CriaTransformadorMTMTMTBTDSS();           
             
             // Capacitor
             if (_SDEE._incluirCapacitoresMT)
             {
                 CriaCapacitorMTDSS();
             }
-            
+                 
             CriaSegmentoBTDSS();
             
             // Ramais 
@@ -173,19 +170,41 @@ namespace ExportadorArqDSS
             
             // Carga MT
             CriaCargaMTDSS();           
-
+                    
+            // Carga BT
+            CriaCargaBTDSS();            
+            
             // Gerador MT
             CriaGeradorMT();
             
             // Gerador BT
-            CriaGeradorBT();            
-            
-            // Carga BT
-            CriaCargaBTDSS();
+            CriaGeradorBT();        
             
             // arquivo cabecalho
             CriaCabecalhoDSS();
         }
+
+        private static string getNomeMalhaAlimSubterraneo()
+        {
+            switch (_par._alim)
+            {
+                case "BHBP04":
+                    return "BHBP_RB";
+                case "BHBP10":
+                    return "BHBP_RS";
+                case "BHCT272":
+                    return "BHCT_AA";
+                case "BHCT203":
+                    return "BHCT_AB";
+                case "BHCT202":
+                    return "BHCT_PS";
+                case "BHCT236":
+                    return "BHCT_SA";
+                default:
+                    return _par._alim;
+            }
+        }    
+
 
         // Generates entire substation
         private static void GenSubstationDSSFiles()
@@ -194,7 +213,7 @@ namespace ExportadorArqDSS
 
             List<string> lstAlim = CemigFeeders.GetAllFeedersFromTxtFile(GetNomeArqLstAlimentadores());
 
-            _par = new Param(_path, _permRes, _codBase, _modelo4condutores, _schema, "", _ano, _pvMV, _pvLV, _dist);
+            _par = new Param(_path, _permRes, _codBase, _modelo4condutores, _schema, "", _ano, _pvMV, _pvLV, _dist, _connBuilder);
 
             // para cada SE da lista
             foreach (string alim in lstAlim)
@@ -202,22 +221,24 @@ namespace ExportadorArqDSS
                 // sets current feeder
                 _par.SetCurrentAlim(alim);
 
-                // gets substation // TODO refactory
-                string substation = System.Text.RegularExpressions.Regex.Replace(alim, @"[\d-]", string.Empty);
-
+                // gets substation 
+                // TODO refactory
+                //string substation = System.Text.RegularExpressions.Regex.Replace(alim, @"[\d-]", string.Empty);
+                string substation = getNomeMalhaAlimSubterraneo();
                 
-                //removes 4 char from Alagoas Substation names
-                if ( _dist.Equals("44") )
-                {
-                    substation = substation.Substring(0, 3);
-                }
+                //TODO  
+                ////removes 4 char from Alagoas Substation names
+                //if ( _dist.Equals("44") )
+                //{
+                //    substation = substation.Substring(0, 3);
+                //}
 
                 // gets all feeders name from substation //TODO move to Param ?
-                bool ret = CemigFeeders.GetAllFeedersFromSubstationString(substation, _connBuilder, _par);
+                bool ret = _par.GetAllFeedersFromSubstationString(substation, _connBuilder);
 
                 if (_par._conjAlim == null)
                 {
-                    Console.Write(substation + " não encontrado!\n");
+                    Console.Write(substation + " não encontrada!\n");
                     continue;
                 }
 
@@ -234,7 +255,8 @@ namespace ExportadorArqDSS
             // lista de alimentadores
             List<string> lstAlim = CemigFeeders.GetAllFeedersFromTxtFile(GetNomeArqLstAlimentadores());
 
-            _par = new Param(_path, _permRes, _codBase, _modelo4condutores, _schema, "", _ano, _pvMV, _pvLV, _dist);
+            // instantiates Param class with feeder parameters
+            _par = new Param(_path, _permRes, _codBase, _modelo4condutores, _schema, "", _ano, _pvMV, _pvLV, _dist, _connBuilder);
 
             // para cada alimentador da lista
             foreach (string alim in lstAlim)

@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data.SqlClient;
-using System.Text;
+﻿using System.Text;
 using Npgsql;
 
 namespace ExportadorGeoPerdasDSS
@@ -47,25 +44,26 @@ namespace ExportadorGeoPerdasDSS
 
             using (NpgsqlConnection conn = new NpgsqlConnection(_connBuilder.ToString()))
             {
-                // abre conexao 
+                
                 conn.Open();
 
                 // TODO add TnsLnh_kV 
                 using (NpgsqlCommand command = conn.CreateCommand())
                 {
-                    command.CommandText = "select CodConsMT,CodFas,CodPonAcopl,TipCrvaCarga,TnsLnh_kV,EnerMedid01_MWh,EnerMedid02_MWh,EnerMedid03_MWh,EnerMedid04_MWh," +
+                    command.CommandText = "SELECT CodConsMT,CodFas,CodPonAcopl,TipCrvaCarga,TnsLnh_kV,EnerMedid01_MWh,EnerMedid02_MWh,EnerMedid03_MWh,EnerMedid04_MWh," +
                         "EnerMedid05_MWh,EnerMedid06_MWh,EnerMedid07_MWh," +
-                        "EnerMedid08_MWh,EnerMedid09_MWh,EnerMedid10_MWh,EnerMedid11_MWh,EnerMedid12_MWh from ";
+                        "EnerMedid08_MWh,EnerMedid09_MWh,EnerMedid10_MWh,EnerMedid11_MWh,EnerMedid12_MWh " +
+                        "FROM ";
 
                     // se modo reconfiguracao 
                     if (_modoReconf)
                     {
-                        command.CommandText += _par._DBschema + "StoredCargaMT where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
+                        command.CommandText += _par._DBschema + "StoredCargaMT where CodBase=@codbase AND CodAlim in (" + _par._conjAlim + ")";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                     }
                     else
                     {
-                        command.CommandText += _par._DBschema + "StoredCargaMT where CodBase=@codbase and CodAlim=@CodAlim";
+                        command.CommandText += _par._DBschema + "StoredCargaMT where CodBase=@codbase AND CodAlim=@CodAlim";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                         command.Parameters.AddWithValue("@CodAlim", _par._alim);
                     }
@@ -107,9 +105,6 @@ namespace ExportadorGeoPerdasDSS
                         }
                     }
                 }
-
-                //fecha conexao
-                conn.Close();
             }
             return true;
         }
